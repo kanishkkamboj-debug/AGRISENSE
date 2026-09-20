@@ -1,0 +1,8 @@
+export type MeasurementState = "MEASURED" | "CALCULATED" | "ESTIMATED" | "UNAVAILABLE";
+export type DataQuality = "VALID" | "MISSING" | "STALE" | "OUT_OF_RANGE" | "SENSOR_ERROR" | "CALIBRATION_REQUIRED" | "DUPLICATE" | "ESTIMATED";
+export type FreshnessState = "LIVE" | "RECENT" | "STALE" | "OFFLINE" | "NO_DATA";
+export type ConfidenceLevel = "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT_DATA";
+export declare const MEASUREMENT_STATES: Record<MeasurementState, MeasurementState>;
+export declare const DATA_QUALITIES: Record<DataQuality, DataQuality>;
+export declare const FRESHNESS_STATES: Record<FreshnessState, FreshnessState>;
+export declare const CONFIDENCE_LEVELS: Record<ConfidenceLevel, ConfidenceLevel>;

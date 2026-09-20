@@ -10,6 +10,9 @@ import { publicApiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
+// SSE Live Stream (No Rate Limiter applied to event stream)
+router.get("/telemetry/stream", TelemetryController.sseStream);
+
 router.use(publicApiLimiter);
 
 // Public Unauthenticated Telemetry

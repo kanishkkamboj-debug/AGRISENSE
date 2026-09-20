@@ -3,8 +3,21 @@ import { TelemetryModel } from "../models/Telemetry";
 import { DeviceModel } from "../models/Device";
 import { validateTelemetryPayload } from "../../../shared/schemas/telemetry.schema";
 import { DataFreshnessService } from "../services/DataFreshnessService";
-import { MockDataService } from "../services/MockDataService";
 import { logger } from "../utils/logger";
+
+// Array of active SSE clients
+const sseClients: Response[] = [];
+
+export function broadcastTelemetryToSse(telemetry: any): void {
+  const dataString = `data: ${JSON.stringify(telemetry)}\n\n`;
+  sseClients.forEach((client) => {
+    try {
+      client.write(dataString);
+    } catch (e) {
+      // client connection closed
+    }
+  });
+}
 
 export class TelemetryController {
   // Device Ingestion: POST /api/v1/device/telemetry
@@ -34,11 +47,11 @@ export class TelemetryController {
           state: valObj.value !== null ? "MEASURED" : "UNAVAILABLE",
           quality: valObj.quality || (valObj.value !== null ? "VALID" : "MISSING"),
           lastUpdated: timestamp,
-          source: deviceId,
+          source: valObj.source || "RS485",
         };
       }
 
-      const telemetryDoc = new TelemetryModel({
+      const telemetryRecord = {
         deviceId,
         fieldId,
         timestamp,
@@ -47,8 +60,9 @@ export class TelemetryController {
         freshnessState,
         dataMode: "REAL",
         syncStatus: "SYNCHRONIZED",
-      });
+      };
 
+      const telemetryDoc = new TelemetryModel(telemetryRecord);
       await telemetryDoc.save();
 
       // Update Device heartbeat and status in Device Registry
@@ -62,9 +76,16 @@ export class TelemetryController {
             lastTelemetry: timestamp,
             "health.bufferedTelemetryCount": 0,
           },
+          $inc: { "health.packetsReceived": 1 },
         },
         { upsert: true }
       );
+
+      // Broadcast to live SSE Web UI clients!
+      broadcastTelemetryToSse({
+        id: telemetryDoc._id.toString(),
+        ...telemetryRecord,
+      });
 
       logger.info(`TELEMETRY_INGESTED deviceId=${deviceId} timestamp=${timestamp}`);
 
@@ -73,7 +94,7 @@ export class TelemetryController {
         data: {
           ackId: telemetryDoc._id.toString(),
           synchronizedCount: 1,
-          message: "Telemetry ingested and synchronized successfully",
+          message: "Telemetry ingested, stored, and broadcasted to Web UI",
         },
         timestamp: new Date().toISOString(),
       });
@@ -114,6 +135,25 @@ export class TelemetryController {
     }
   }
 
+  // SSE Stream Endpoint: GET /api/v1/public/telemetry/stream
+  static sseStream(req: Request, res: Response): void {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    sseClients.push(res);
+    logger.info(`SSE_CLIENT_CONNECTED totalClients=${sseClients.length}`);
+
+    req.on("close", () => {
+      const idx = sseClients.indexOf(res);
+      if (idx !== -1) {
+        sseClients.splice(idx, 1);
+      }
+      logger.info(`SSE_CLIENT_DISCONNECTED totalClients=${sseClients.length}`);
+    });
+  }
+
   // Public GET /api/v1/public/telemetry/latest
   static async getLatestTelemetry(req: Request, res: Response): Promise<void> {
     try {
@@ -121,12 +161,12 @@ export class TelemetryController {
       const doc = await TelemetryModel.findOne({ fieldId }).sort({ timestamp: -1 }).lean();
 
       if (!doc) {
-        // Return Mock Telemetry if DB is empty
-        const mock = MockDataService.getMockTelemetry("normal");
+        // Return null/empty telemetry state when DB is empty (NO FAKE FALLBACK DATA!)
         res.status(200).json({
           success: true,
-          data: mock,
-          dataMode: "MOCK",
+          data: null,
+          dataMode: "REAL",
+          message: "No sensor data recorded yet. Waiting for physical Raspberry Pi telemetry.",
           timestamp: new Date().toISOString(),
         });
         return;
@@ -159,17 +199,6 @@ export class TelemetryController {
       const limit = parseInt(req.query.limit as string) || 48;
 
       const docs = await TelemetryModel.find({ fieldId }).sort({ timestamp: -1 }).limit(limit).lean();
-
-      if (docs.length === 0) {
-        const mock = [MockDataService.getMockTelemetry("normal")];
-        res.status(200).json({
-          success: true,
-          data: mock,
-          dataMode: "MOCK",
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      }
 
       const items = docs.map((doc) => ({
         id: doc._id.toString(),

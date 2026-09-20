@@ -4,35 +4,19 @@ import { AdvisoryResponse } from "../../../shared/types/api";
 
 const API_BASE = "/api/v1/public";
 
-export async function fetchLatestTelemetry(fieldId = "FIELD-PUNJAB-01"): Promise<{ data: TelemetryRecord; dataMode: string }> {
+export async function fetchLatestTelemetry(fieldId = "FIELD-PUNJAB-01"): Promise<{ data: TelemetryRecord | null; dataMode: string }> {
   try {
     const res = await fetch(`${API_BASE}/telemetry/latest?fieldId=${fieldId}`);
     const json = await res.json();
-    if (json.success && json.data) {
-      return { data: json.data, dataMode: json.dataMode || "REAL" };
+    if (json.success) {
+      return { data: json.data || null, dataMode: json.dataMode || "REAL" };
     }
   } catch (e) {
-    console.warn("API offline, falling back to client mock telemetry", e);
+    console.warn("API offline or network error", e);
   }
   return {
-    dataMode: "MOCK",
-    data: {
-      deviceId: "PI5-FIELD-001",
-      fieldId,
-      timestamp: new Date().toISOString(),
-      measurements: {
-        soil_moisture: { value: 42.7, unit: "%", state: "MEASURED", quality: "VALID" },
-        soil_temperature: { value: 24.8, unit: "°C", state: "MEASURED", quality: "VALID" },
-        soil_humidity: { value: 61.2, unit: "%", state: "MEASURED", quality: "VALID" },
-        soil_ph: { value: 6.5, unit: "pH", state: "MEASURED", quality: "VALID" },
-        nitrogen: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING" },
-        phosphorus: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING" },
-        potassium: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING" },
-      },
-      qualitySummary: "VALID",
-      freshnessState: "LIVE",
-      dataMode: "MOCK",
-    },
+    dataMode: "REAL",
+    data: null,
   };
 }
 
