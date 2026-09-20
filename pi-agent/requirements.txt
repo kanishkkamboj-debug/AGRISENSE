@@ -1,0 +1,5 @@
+requests>=2.31.0
+pyserial>=3.5
+minimalmodbus>=2.1.1
+psutil>=5.9.8
+urllib3>=2.2.1

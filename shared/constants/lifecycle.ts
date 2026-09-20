@@ -1,0 +1,37 @@
+export type RecommendationStatus =
+  | "GENERATED"
+  | "PRESENTED"
+  | "ACKNOWLEDGED"
+  | "ACTION_EXPECTED"
+  | "REASSESSMENT_PENDING"
+  | "VERIFICATION"
+  | "IMPROVED"
+  | "PARTIAL"
+  | "NOT_IMPROVED"
+  | "ADAPT_PLAN";
+
+export type RecommendationPriority =
+  | "URGENT"
+  | "HIGH"
+  | "MEDIUM"
+  | "ROUTINE";
+
+export const RECOMMENDATION_STATUSES: Record<RecommendationStatus, RecommendationStatus> = {
+  GENERATED: "GENERATED",
+  PRESENTED: "PRESENTED",
+  ACKNOWLEDGED: "ACKNOWLEDGED",
+  ACTION_EXPECTED: "ACTION_EXPECTED",
+  REASSESSMENT_PENDING: "REASSESSMENT_PENDING",
+  VERIFICATION: "VERIFICATION",
+  IMPROVED: "IMPROVED",
+  PARTIAL: "PARTIAL",
+  NOT_IMPROVED: "NOT_IMPROVED",
+  ADAPT_PLAN: "ADAPT_PLAN",
+};
+
+export const RECOMMENDATION_PRIORITIES: Record<RecommendationPriority, RecommendationPriority> = {
+  URGENT: "URGENT",
+  HIGH: "HIGH",
+  MEDIUM: "MEDIUM",
+  ROUTINE: "ROUTINE",
+};

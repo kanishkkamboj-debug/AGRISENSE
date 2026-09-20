@@ -1,0 +1,24 @@
+{
+  "name": "agrisense",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "typecheck:shared": "npm run typecheck --workspace=@agrisense/shared",
+    "typecheck:backend": "npm run typecheck --workspace=@agrisense/backend",
+    "typecheck:frontend": "npm run typecheck --workspace=@agrisense/frontend",
+    "typecheck": "npm run typecheck:shared && npm run typecheck:backend && npm run typecheck:frontend",
+    "build:shared": "npm run build --workspace=@agrisense/shared",
+    "build:backend": "npm run build --workspace=@agrisense/backend",
+    "build:frontend": "npm run build --workspace=@agrisense/frontend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "test": "npm run test --workspace=@agrisense/backend"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "deviceId": "PI5-FIELD-001",
+  "fieldId": "FIELD-PUNJAB-01",
+  "deviceToken": "agrisense_device_secret_token_key_2026",
+  "cloudApiUrl": "http://localhost:5000/api/v1/device",
+  "pollIntervalSeconds": 2,
+  "syncIntervalSeconds": 5,
+  "heartbeatIntervalSeconds": 15,
+  "sqliteDbPath": "pi_telemetry_buffer.db",
+  "sensors": [
+    {
+      "id": "MODBUS-SOIL-01",
+      "parameter": "soil_moisture",
+      "driver": "modbus_rs485",
+      "protocol": "RS485",
+      "unit": "%",
+      "slaveId": 1,
+      "register": 0,
+      "scaleFactor": 0.1
+    },
+    {
+      "id": "MODBUS-TEMP-01",
+      "parameter": "soil_temperature",
+      "driver": "modbus_rs485",
+      "protocol": "RS485",
+      "unit": "°C",
+      "slaveId": 1,
+      "register": 1,
+      "scaleFactor": 0.1
+    },
+    {
+      "id": "MODBUS-PH-01",
+      "parameter": "soil_ph",
+      "driver": "modbus_rs485",
+      "protocol": "RS485",
+      "unit": "pH",
+      "slaveId": 1,
+      "register": 2,
+      "scaleFactor": 0.01
+    }
+  ]
+}

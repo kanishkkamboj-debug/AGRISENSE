@@ -1,0 +1,15 @@
+{
+  "name": "@agrisense/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript schemas, types, and constants for AgriSense IoT platform",
+  "main": "index.ts",
+  "types": "index.ts",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

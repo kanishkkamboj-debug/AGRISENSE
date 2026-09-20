@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "..",
+    "outDir": "dist",
+    "resolveJsonModule": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "../shared/**/*.ts",
+    "../knowledge-base/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "../frontend",
+    "../pi-agent",
+    "../tests"
+  ]
+}
