@@ -1,7 +1,21 @@
 import React from "react";
 import { useIoTData } from "../../hooks/useIoTData";
+import { MeasurementValue } from "../../../../shared/types/telemetry";
 import { Clock, Droplets, Thermometer, Wind, TestTube, CheckCircle2, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+
+function formatMeasurement(measurement: MeasurementValue | undefined | null): string {
+  if (!measurement || measurement.value === null || measurement.value === undefined) {
+    return "No sensor data";
+  }
+  if (measurement.state === "UNAVAILABLE") {
+    return "No sensor data";
+  }
+  if (measurement.quality === "MISSING" || measurement.quality === "SENSOR_ERROR") {
+    return "Unavailable";
+  }
+  return String(measurement.value);
+}
 
 export const DashboardView: React.FC = () => {
   const { telemetry, dataAgeSeconds, freshnessState } = useIoTData();
@@ -15,8 +29,12 @@ export const DashboardView: React.FC = () => {
   const p = m.phosphorus;
   const k = m.potassium;
 
+  const nVal = n?.state === "MEASURED" && typeof n.value === "number" ? n.value : null;
+  const pVal = p?.state === "MEASURED" && typeof p.value === "number" ? p.value : null;
+  const kVal = k?.state === "MEASURED" && typeof k.value === "number" ? k.value : null;
+
   // Real SVG sparkline wave data points based on actual telemetry
-  const points = sm?.value ? [40, 41.5, 42.0, 41.8, 43.1, sm.value] : [40, 41, 42, 41.5, 42.7];
+  const points = sm?.value !== null && sm?.value !== undefined ? [40, 41.5, 42.0, 41.8, 43.1, sm.value] : [40, 41, 42, 41.5, 42.7];
   const maxP = Math.max(...points, 50);
   const minP = Math.min(...points, 30);
   const svgPath = points
@@ -65,7 +83,7 @@ export const DashboardView: React.FC = () => {
             <Droplets className="w-4 h-4 text-sky-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{sm?.value !== null && sm?.value !== undefined ? sm.value : "--"}</span>
+            <span className="text-3xl font-extrabold text-white tracking-tight">{formatMeasurement(sm)}</span>
             <span className="text-sm text-slate-400 font-mono">%</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs font-mono">
@@ -81,7 +99,7 @@ export const DashboardView: React.FC = () => {
             <Thermometer className="w-4 h-4 text-amber-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{st?.value !== null && st?.value !== undefined ? st.value : "--"}</span>
+            <span className="text-3xl font-extrabold text-white tracking-tight">{formatMeasurement(st)}</span>
             <span className="text-sm text-slate-400 font-mono">°C</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs font-mono">
@@ -97,7 +115,7 @@ export const DashboardView: React.FC = () => {
             <Wind className="w-4 h-4 text-indigo-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{sh?.value !== null && sh?.value !== undefined ? sh.value : "--"}</span>
+            <span className="text-3xl font-extrabold text-white tracking-tight">{formatMeasurement(sh)}</span>
             <span className="text-sm text-slate-400 font-mono">%</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs font-mono">
@@ -113,7 +131,7 @@ export const DashboardView: React.FC = () => {
             <TestTube className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{sph?.value !== null && sph?.value !== undefined ? sph.value : "--"}</span>
+            <span className="text-3xl font-extrabold text-white tracking-tight">{formatMeasurement(sph)}</span>
             <span className="text-sm text-slate-400 font-mono">pH</span>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs font-mono">
@@ -138,7 +156,7 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <div className="relative h-44 w-full bg-slate-900/60 rounded-xl border border-slate-800/80 p-4 flex items-center justify-center">
-            {sm?.value !== null ? (
+            {sm?.value !== null && sm?.value !== undefined ? (
               <svg className="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
                 <path d={svgPath} fill="none" stroke="#38bdf8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -159,14 +177,14 @@ export const DashboardView: React.FC = () => {
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-slate-300 font-bold">Nitrogen (N)</span>
-                  {!n || n.state === "UNAVAILABLE" || n.value === null ? (
+                  {nVal === null ? (
                     <span className="text-amber-400/80 italic">N — No sensor data</span>
                   ) : (
-                    <span className="text-slate-200">{n.value} mg/kg</span>
+                    <span className="text-slate-200">{nVal} mg/kg</span>
                   )}
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
-                  <div className={`h-full ${n?.value ? "bg-emerald-500" : "bg-slate-800"}`} style={{ width: n?.value ? `${(n.value / 150) * 100}%` : "0%" }}></div>
+                  <div className={`h-full ${nVal !== null ? "bg-emerald-500" : "bg-slate-800"}`} style={{ width: nVal !== null ? `${(nVal / 150) * 100}%` : "0%" }}></div>
                 </div>
               </div>
 
@@ -174,14 +192,14 @@ export const DashboardView: React.FC = () => {
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-slate-300 font-bold">Phosphorus (P)</span>
-                  {!p || p.state === "UNAVAILABLE" || p.value === null ? (
+                  {pVal === null ? (
                     <span className="text-amber-400/80 italic">P — No sensor data</span>
                   ) : (
-                    <span className="text-slate-200">{p.value} mg/kg</span>
+                    <span className="text-slate-200">{pVal} mg/kg</span>
                   )}
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
-                  <div className={`h-full ${p?.value ? "bg-emerald-500" : "bg-slate-800"}`} style={{ width: p?.value ? `${(p.value / 80) * 100}%` : "0%" }}></div>
+                  <div className={`h-full ${pVal !== null ? "bg-emerald-500" : "bg-slate-800"}`} style={{ width: pVal !== null ? `${(pVal / 80) * 100}%` : "0%" }}></div>
                 </div>
               </div>
 
@@ -189,14 +207,14 @@ export const DashboardView: React.FC = () => {
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-slate-300 font-bold">Potassium (K)</span>
-                  {!k || k.state === "UNAVAILABLE" || k.value === null ? (
+                  {kVal === null ? (
                     <span className="text-amber-400/80 italic">K — No sensor data</span>
                   ) : (
-                    <span className="text-slate-200">{k.value} mg/kg</span>
+                    <span className="text-slate-200">{kVal} mg/kg</span>
                   )}
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
-                  <div className={`h-full ${k?.value ? "bg-emerald-500" : "bg-slate-800"}`} style={{ width: k?.value ? `${(k.value / 120) * 100}%` : "0%" }}></div>
+                  <div className={`h-full ${kVal !== null ? "bg-emerald-500" : "bg-slate-800"}`} style={{ width: kVal !== null ? `${(kVal / 120) * 100}%` : "0%" }}></div>
                 </div>
               </div>
             </div>
