@@ -19,6 +19,17 @@ export function broadcastTelemetryToSse(telemetry: any): void {
   });
 }
 
+function parseMeasurements(measurements: any): Record<string, any> {
+  if (!measurements) return {};
+  if (measurements instanceof Map) {
+    return Object.fromEntries(measurements);
+  }
+  if (typeof measurements === "object") {
+    return measurements;
+  }
+  return {};
+}
+
 export class TelemetryController {
   // Device Ingestion: POST /api/v1/device/telemetry
   static async ingestTelemetry(req: Request, res: Response): Promise<void> {
@@ -179,7 +190,7 @@ export class TelemetryController {
           deviceId: doc.deviceId,
           fieldId: doc.fieldId,
           timestamp: doc.timestamp,
-          measurements: doc.measurements ? Object.fromEntries(doc.measurements as unknown as Map<string, any>) : {},
+          measurements: parseMeasurements(doc.measurements),
           qualitySummary: doc.qualitySummary,
           freshnessState: DataFreshnessService.getFreshnessState(doc.timestamp),
           dataMode: doc.dataMode,
@@ -205,7 +216,7 @@ export class TelemetryController {
         deviceId: doc.deviceId,
         fieldId: doc.fieldId,
         timestamp: doc.timestamp,
-        measurements: doc.measurements ? Object.fromEntries(doc.measurements as unknown as Map<string, any>) : {},
+        measurements: parseMeasurements(doc.measurements),
         qualitySummary: doc.qualitySummary,
         freshnessState: DataFreshnessService.getFreshnessState(doc.timestamp),
         dataMode: doc.dataMode,

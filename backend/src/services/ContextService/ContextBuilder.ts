@@ -6,8 +6,19 @@ import { FieldModel } from "../../models/Field";
 import { MockDataService } from "../MockDataService";
 import { logger } from "../../utils/logger";
 
+function parseMeasurements(measurements: any): Record<string, any> {
+  if (!measurements) return {};
+  if (measurements instanceof Map) {
+    return Object.fromEntries(measurements);
+  }
+  if (typeof measurements === "object") {
+    return measurements;
+  }
+  return {};
+}
+
 export class ContextBuilder {
-  static async buildContext(fieldId = "FIELD-PUNJAB-01"): Promise<AgriculturalContext> {
+  static async buildContext(fieldId = "FIELD-PUNJAB-01", mode: "REAL_IOT" | "SIMULATION" = "REAL_IOT"): Promise<AgriculturalContext> {
     try {
       // 1. Fetch Field configuration from DB
       const fieldDoc = await FieldModel.findOne({ fieldId }).lean();
@@ -27,8 +38,18 @@ export class ContextBuilder {
           deviceIds: fieldDoc.deviceIds || [],
         };
       } else {
-        // Fallback to mock field if database is empty
-        field = MockDataService.getMockContext().field;
+        field = {
+          fieldId,
+          name: "Field 01 - Main Demonstration Plot",
+          locationName: "Punjab Main Plot",
+          areaHectares: 4.5,
+          perimeterMeters: 850,
+          centroid: [30.901, 75.857],
+          geometry: {},
+          currentCropId: "wheat",
+          currentCropStage: "tillering",
+          deviceIds: ["PI5-FIELD-001"],
+        };
       }
 
       // 2. Fetch Latest Telemetry for field
@@ -41,14 +62,30 @@ export class ContextBuilder {
           deviceId: latestDoc.deviceId,
           fieldId: latestDoc.fieldId,
           timestamp: latestDoc.timestamp,
-          measurements: latestDoc.measurements ? Object.fromEntries(latestDoc.measurements as unknown as Map<string, unknown>) : {},
+          measurements: parseMeasurements(latestDoc.measurements),
           qualitySummary: latestDoc.qualitySummary as any,
           freshnessState: latestDoc.freshnessState as any,
-          dataMode: latestDoc.dataMode as any,
+          dataMode: "REAL",
         };
       } else {
-        // Fallback to Mock Telemetry
-        telemetry = MockDataService.getMockTelemetry("normal");
+        // Strict REAL IoT Mode: Return empty telemetry without fake numbers
+        telemetry = {
+          deviceId: "PI5-FIELD-001",
+          fieldId,
+          timestamp: new Date().toISOString(),
+          measurements: {
+            soil_moisture: { value: null, unit: "%", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+            soil_temperature: { value: null, unit: "°C", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+            soil_humidity: { value: null, unit: "%", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+            soil_ph: { value: null, unit: "pH", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+            nitrogen: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+            phosphorus: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+            potassium: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
+          },
+          qualitySummary: "INVALID",
+          freshnessState: "NO_DATA",
+          dataMode: "REAL",
+        };
       }
 
       // 3. Fetch 24-hour historical telemetry
@@ -62,10 +99,10 @@ export class ContextBuilder {
         deviceId: doc.deviceId,
         fieldId: doc.fieldId,
         timestamp: doc.timestamp,
-        measurements: doc.measurements ? Object.fromEntries(doc.measurements as unknown as Map<string, unknown>) : {},
+        measurements: parseMeasurements(doc.measurements),
         qualitySummary: doc.qualitySummary as any,
         freshnessState: doc.freshnessState as any,
-        dataMode: doc.dataMode as any,
+        dataMode: "REAL",
       }));
 
       // Calculate 24h moisture statistics
@@ -82,12 +119,12 @@ export class ContextBuilder {
           countMoisture++;
           if (sm < minMoisture) minMoisture = sm;
           if (sm > maxMoisture) maxMoisture = sm;
-          if (sm > 80) saturationHours += 0.5; // Assuming ~30 min interval
+          if (sm > 80) saturationHours += 0.5;
         }
       }
 
-      const avgMoisture = countMoisture > 0 ? parseFloat((sumMoisture / countMoisture).toFixed(1)) : 42.0;
-      if (minMoisture === 100) minMoisture = 35.0;
+      const avgMoisture = countMoisture > 0 ? parseFloat((sumMoisture / countMoisture).toFixed(1)) : 0;
+      if (minMoisture === 100) minMoisture = 0;
 
       // 4. Resolve Crop Profile
       const cropKey = field.currentCropId || "wheat";
@@ -106,7 +143,7 @@ export class ContextBuilder {
           minMoisture24h: minMoisture,
           maxMoisture24h: maxMoisture,
           saturationDurationHours: saturationHours,
-          previousAdvisoriesCount: 1,
+          previousAdvisoriesCount: historyRecords.length,
         },
         gis: {
           areaHectares: field.areaHectares,
@@ -123,20 +160,20 @@ export class ContextBuilder {
           available: true,
         },
         weather: {
-          currentTempCelsius: telemetry.measurements.ambient_temperature?.value || 25,
-          currentHumidityPercent: telemetry.measurements.ambient_humidity?.value || 60,
+          currentTempCelsius: telemetry.measurements.soil_temperature?.value || 25,
+          currentHumidityPercent: telemetry.measurements.soil_humidity?.value || 60,
           recentRainfallMm24h: telemetry.measurements.rainfall?.value || 0,
           forecastRainfallMm72h: 0,
           windSpeedKmh: 10,
-          source: "OpenWeather-Agri",
+          source: "RS485-Sensors",
         },
       };
 
-      logger.info(`CONTEXT_BUILDER_SUCCESS fieldId=${fieldId} telemetryAge=${telemetry.timestamp}`);
+      logger.info(`CONTEXT_BUILDER_SUCCESS fieldId=${fieldId} dataMode=REAL_IOT timestamp=${telemetry.timestamp}`);
       return context;
     } catch (err: any) {
       logger.error(`CONTEXT_BUILDER_ERROR fieldId=${fieldId}: ${err.message}`);
-      return MockDataService.getMockContext("normal");
+      throw err;
     }
   }
 }

@@ -14,12 +14,16 @@ interface IoTContextType {
   dataAgeSeconds: number;
   freshnessState: "LIVE" | "RECENT" | "STALE" | "OFFLINE" | "NO_DATA";
   dataMode: "REAL" | "MOCK";
+  systemMode: "REAL_IOT" | "SIMULATION";
+  setSystemMode: (mode: "REAL_IOT" | "SIMULATION") => void;
   isConnected: boolean;
   sseConnected: boolean;
   packetCount: number;
   retryCount: number;
   backoffDelayMs: number;
   activityLogs: ActivityLog[];
+  activeFieldCondition: "Normal" | "Drought" | "Flood";
+  setActiveFieldCondition: (state: "Normal" | "Drought" | "Flood") => void;
   refreshNow: () => void;
 }
 
@@ -29,12 +33,14 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [telemetry, setTelemetry] = useState<TelemetryRecord | null>(null);
   const [dataAgeSeconds, setDataAgeSeconds] = useState<number>(0);
   const [dataMode, setDataMode] = useState<"REAL" | "MOCK">("REAL");
+  const [systemMode, setSystemMode] = useState<"REAL_IOT" | "SIMULATION">("REAL_IOT");
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [sseConnected, setSseConnected] = useState<boolean>(false);
   const [packetCount, setPacketCount] = useState<number>(0);
   const [retryCount, setRetryCount] = useState<number>(0);
-  const [backoffDelayMs, setBackoffDelayMs] = useState<number>(2000);
+  const [backoffDelayMs, setBackoffDelayMs] = useState<number>(15000);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [activeFieldCondition, setActiveFieldCondition] = useState<"Normal" | "Drought" | "Flood">("Normal");
 
   const addActivityLog = useCallback((message: string, type: "info" | "success" | "warn" | "error" = "info") => {
     const log: ActivityLog = {
@@ -51,7 +57,7 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const res = await fetchLatestTelemetry("FIELD-PUNJAB-01");
       if (res && res.data) {
         setTelemetry(res.data);
-        setDataMode(res.dataMode === "MOCK" ? "MOCK" : "REAL");
+        setDataMode("REAL");
 
         if (res.data.timestamp) {
           const age = Math.max(0, Math.floor((Date.now() - Date.parse(res.data.timestamp)) / 1000));
@@ -63,20 +69,13 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addActivityLog("Backend connection established", "success");
         }
         setRetryCount(0);
-        setBackoffDelayMs(2000);
-      } else {
-        if (telemetry === null) {
-          addActivityLog("Waiting for initial sensor telemetry stream...", "info");
-        }
       }
     } catch (err) {
       console.warn("Polling attempt failed", err);
       setIsConnected(false);
       setRetryCount((prev) => prev + 1);
-      setBackoffDelayMs((prev) => Math.min(prev * 2, 30000));
-      addActivityLog("Connection offline — retrying with exponential backoff", "warn");
     }
-  }, [isConnected, telemetry, addActivityLog]);
+  }, [isConnected, addActivityLog]);
 
   // Real-time SSE EventSource connection
   useEffect(() => {
@@ -100,7 +99,7 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const age = Math.max(0, Math.floor((Date.now() - Date.parse(record.timestamp)) / 1000));
             setDataAgeSeconds(age);
           }
-          addActivityLog(`Live telemetry packet #${packetCount + 1} received from ${record.deviceId || "PI5-FIELD-001"}`, "info");
+          addActivityLog(`Live telemetry packet received from ${record.deviceId || "PI5-FIELD-001"}`, "info");
         } catch (e) {
           console.error("Failed to parse SSE payload", e);
         }
@@ -118,7 +117,7 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         eventSource.close();
       }
     };
-  }, [addActivityLog, packetCount]);
+  }, [addActivityLog]);
 
   // Data Age seconds ticker
   useEffect(() => {
@@ -131,12 +130,14 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(timer);
   }, [telemetry]);
 
-  // Initial load and periodic polling fallback
+  // Initial load and periodic polling fallback (only poll when SSE is disconnected)
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, backoffDelayMs);
+    if (sseConnected) return; // Skip HTTP polling when SSE is live!
+    const pollInterval = sseConnected ? 30000 : backoffDelayMs;
+    const interval = setInterval(loadData, pollInterval);
     return () => clearInterval(interval);
-  }, [loadData, backoffDelayMs]);
+  }, [loadData, sseConnected, backoffDelayMs]);
 
   // Compute freshness state
   let freshnessState: "LIVE" | "RECENT" | "STALE" | "OFFLINE" | "NO_DATA" = "NO_DATA";
@@ -159,12 +160,16 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dataAgeSeconds,
         freshnessState,
         dataMode,
+        systemMode,
+        setSystemMode,
         isConnected,
         sseConnected,
         packetCount,
         retryCount,
         backoffDelayMs,
         activityLogs,
+        activeFieldCondition,
+        setActiveFieldCondition,
         refreshNow: loadData,
       }}
     >

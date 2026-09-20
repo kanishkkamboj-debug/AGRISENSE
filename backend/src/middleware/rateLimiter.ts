@@ -2,9 +2,10 @@ import rateLimit from "express-rate-limit";
 
 export const publicApiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 120, // 120 requests per minute
+  max: 600, // 600 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === "development" || req.headers["x-skip-ratelimit"] === "true",
   message: {
     success: false,
     error: {

@@ -1,15 +1,18 @@
 import React, { ReactNode, useState } from "react";
 import { Sidebar } from "./Sidebar";
-import { Menu, X, Cpu, MapPin, Radio, Bell } from "lucide-react";
+import { BottomTelemetryBar } from "./BottomTelemetryBar";
+import { Menu, X, Download, Bell, Settings } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
+import { Link, useLocation } from "react-router-dom";
 
 export const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { freshnessState, isConnected, dataAgeSeconds } = useIoTData();
+  const location = useLocation();
+  const { activeFieldCondition } = useIoTData();
 
   return (
-    <div className="min-h-screen flex bg-[#060D08] text-slate-100 font-sans antialiased">
-      {/* Mobile backdrop */}
+    <div className="min-h-screen flex bg-[#0F1411] text-[#F0FDF4] font-sans antialiased selection:bg-[#34D399] selection:text-slate-950 pb-16">
+      {/* Mobile Backdrop */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -20,50 +23,74 @@ export const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
       {/* Sidebar Navigation */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Main Content Workspace */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#0A120C]">
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0F1411]">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-20 bg-[#08100A]/90 backdrop-blur-md border-b border-[#172B1C] px-4 sm:px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-20 bg-[#121814]/90 backdrop-blur-md border-b border-[#1E2821] px-4 sm:px-8 py-3 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg bg-[#0E1E13] text-slate-300 hover:text-white border border-[#1C3622]"
+              className="lg:hidden p-2 rounded-lg bg-[#18211B] text-[#9EB1A3] hover:text-white border border-[#26352B]"
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            <div className="flex items-center gap-2 font-mono text-xs text-slate-400">
-              <MapPin className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold text-slate-200">Field 01 — Punjab Plot</span>
-              <span className="text-slate-600 hidden sm:inline">|</span>
-              <span className="text-slate-400 hidden sm:inline font-mono">30.901° N, 75.857° E</span>
-            </div>
+            {/* Brand Logo */}
+            <Link to="/" className="flex items-center gap-1 text-lg font-extrabold tracking-tight text-white">
+              Agri-<span className="text-[#34D399] font-black">GISIntelligence</span>
+            </Link>
+
+            {/* Top Subnav */}
+            <nav className="hidden md:flex items-center gap-6 ml-6 text-xs font-semibold font-mono text-[#9EB1A3]">
+              <Link to="/" className={location.pathname === "/" ? "text-[#34D399] font-bold border-b-2 border-[#34D399] pb-0.5" : "hover:text-white"}>
+                Dashboard
+              </Link>
+              <Link to="/reports" className={location.pathname === "/reports" ? "text-[#34D399] font-bold border-b-2 border-[#34D399] pb-0.5" : "hover:text-white"}>
+                Reports
+              </Link>
+              <Link to="/settings" className={location.pathname === "/settings" ? "text-[#34D399] font-bold border-b-2 border-[#34D399] pb-0.5" : "hover:text-white"}>
+                Settings
+              </Link>
+            </nav>
           </div>
 
-          {/* Quick Header Actions & Status */}
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0D1B11] border border-[#18331F] font-mono text-xs">
-              <span className="text-slate-400">Data Age:</span>
-              <strong className="text-emerald-400">{dataAgeSeconds}s</strong>
+          {/* Right Header Controls */}
+          <div className="flex items-center gap-4 font-mono text-xs">
+            <div className="hidden sm:block text-[#6B7C6F] font-semibold">
+              SHI: <strong className="text-white">96.81</strong> · {activeFieldCondition}
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0D1B11] border border-[#18331F] font-mono text-xs">
-              <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-400 animate-pulse" : "bg-rose-500"}`}></span>
-              <span className="text-slate-200 font-bold uppercase">{freshnessState}</span>
+            <Link
+              to="/reports"
+              className="px-4 py-2 rounded-xl bg-[#34D399] text-[#08120B] font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-[#34D399]/10 hover:bg-[#2DD4BF] transition-all"
+            >
+              <Download className="w-3.5 h-3.5 stroke-[2.5]" /> Export Data
+            </Link>
+
+            <div className="flex items-center gap-2 text-[#6B7C6F] border-l border-[#1E2821] pl-3">
+              <button className="p-1.5 rounded-lg hover:bg-[#18211B] hover:text-white">
+                <Bell className="w-4 h-4" />
+              </button>
+              <button className="p-1.5 rounded-lg hover:bg-[#18211B] hover:text-white">
+                <Settings className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#18211B] border border-[#26352B] text-white font-sans text-xs font-bold">
+                <span className="w-6 h-6 rounded-full bg-[#34D399] text-[#08120B] flex items-center justify-center text-[10px] font-black">KK</span>
+                <span className="hidden sm:inline">Kanishk</span>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Content View Container */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        {/* View Content */}
+        <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-6">
           {children}
         </main>
-
-        {/* Footer */}
-        <footer className="border-t border-[#172B1C] py-4 text-center text-xs text-slate-500 font-mono bg-[#070E08]">
-          AgriSense IoT Platform v1.0.0 — Zero Fabrication Policy | Evidence → Decision → Action → Verification
-        </footer>
       </div>
+
+      {/* Persistent Bottom Telemetry Bar */}
+      <BottomTelemetryBar />
     </div>
   );
 };

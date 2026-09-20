@@ -1,89 +1,51 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet-draw";
-import { MapPin, Layers, Save, Upload, Download, CheckCircle } from "lucide-react";
-import { fetchFields, saveFieldBoundary } from "../../services/api";
+import { Search, Layers, Square, Hexagon, MapPin, CheckSquare, X } from "lucide-react";
 
 export const GISView: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const drawnItemsRef = useRef<L.FeatureGroup>(new L.FeatureGroup());
 
-  const [fieldArea, setFieldArea] = useState<number | null>(4.5);
-  const [fieldPerimeter, setFieldPerimeter] = useState<number | null>(850);
-  const [geoJsonData, setGeoJsonData] = useState<string>("");
-  const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"Layers" | "Location" | "Sources">("Layers");
+  const [worldSoil, setWorldSoil] = useState<boolean>(true);
+  const [ndviVegetation, setNdviVegetation] = useState<boolean>(true);
+  const [floodRisk, setFloodRisk] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    // Initialize Leaflet Map centered over Punjab farm plot
-    const map = L.map(mapContainerRef.current).setView([30.901, 75.857], 15);
+    // Initialize Leaflet Map over Punjab plot
+    const map = L.map(mapContainerRef.current).setView([30.901, 75.857], 13);
     mapRef.current = map;
 
-    // OpenStreetMap Base Layer
-    const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap contributors | AgriSense GIS',
-    }).addTo(map);
-
-    // Satellite Base Layer
+    // Esri Satellite World Imagery Base Layer
     const satelliteLayer = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
-    });
+    }).addTo(map);
 
-    L.control.layers({ "Street Map": osmLayer, "Satellite View": satelliteLayer }).addTo(map);
-
-    // FeatureGroup for drawn polygons/rectangles
-    const drawnItems = drawnItemsRef.current;
-    map.addLayer(drawnItems);
-
-    // Default Farm Field Polygon
-    const defaultPolygon = L.polygon(
+    // Green NDVI Vegetation Semi-transparent Overlay Polygon
+    const ndviPolygon = L.polygon(
       [
-        [30.900, 75.855],
-        [30.900, 75.860],
-        [30.905, 75.860],
-        [30.905, 75.855],
+        [30.85, 75.75],
+        [30.85, 75.95],
+        [30.95, 75.95],
+        [30.95, 75.75],
       ],
-      { color: "#10b981", fillColor: "#10b981", fillOpacity: 0.25 }
-    ).addTo(drawnItems);
+      {
+        color: "#22c55e",
+        fillColor: "#22c55e",
+        fillOpacity: 0.35,
+        weight: 1,
+      }
+    ).addTo(map);
 
-    setGeoJsonData(JSON.stringify(defaultPolygon.toGeoJSON(), null, 2));
-
-    // IoT Sensor Marker
-    const sensorMarker = L.marker([30.9025, 75.8575]).addTo(map);
-    sensorMarker.bindPopup("<b>IoT Gateway: PI5-FIELD-001</b><br>RS485 Sensor Node 01").openPopup();
-
-    // Leaflet Draw Control Setup
-    const drawControl = new (L.Control as any).Draw({
-      edit: { featureGroup: drawnItems },
-      draw: {
-        polyline: false,
-        circle: false,
-        circlemarker: false,
-        marker: false,
-        polygon: { allowIntersection: false, shapeOptions: { color: "#10b981" } },
-        rectangle: { shapeOptions: { color: "#38bdf8" } },
-      },
-    });
-    map.addControl(drawControl);
-
-    // Leaflet Draw Events
-    map.on((L as any).Draw.Event.CREATED, (e: any) => {
-      const layer = e.layer;
-      drawnItems.addLayer(layer);
-      const geoJson = layer.toGeoJSON();
-      setGeoJsonData(JSON.stringify(geoJson, null, 2));
-
-      // Calculate approximate area
-      const bounds = layer.getBounds();
-      const latDiff = Math.abs(bounds.getNorth() - bounds.getSouth());
-      const lngDiff = Math.abs(bounds.getEast() - bounds.getWest());
-      const approxAreaHa = parseFloat(((latDiff * 111) * (lngDiff * 111) * 100).toFixed(2));
-      setFieldArea(approxAreaHa);
-      setFieldPerimeter(Math.round((latDiff + lngDiff) * 2 * 111000));
-    });
+    // Marker over Field Hub
+    L.marker([30.901, 75.857])
+      .addTo(map)
+      .bindPopup("<b>Field 01 — Punjab Demonstration Plot</b><br>RS485 Sensor Node Active")
+      .openPopup();
 
     return () => {
       map.remove();
@@ -91,89 +53,146 @@ export const GISView: React.FC = () => {
     };
   }, []);
 
-  const handleSaveField = async () => {
-    const success = await saveFieldBoundary({
-      fieldId: "FIELD-PUNJAB-01",
-      name: "Field 01 - Main Demonstration Plot",
-      areaHectares: fieldArea || 4.5,
-      perimeterMeters: fieldPerimeter || 850,
-      centroid: [30.901, 75.857],
-      geometry: geoJsonData ? JSON.parse(geoJsonData) : {},
-    });
-    if (success) {
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 text-slate-800 font-sans">
+      {/* Title Header & Provider Badges */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Layers className="w-6 h-6 text-emerald-400" /> GIS & Spatial Farm Intelligence
-          </h1>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
-            Leaflet Spatial Subsystem | GeoJSON Polygon & Rectangle Boundary Calculations
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">GIS Field Map</h1>
+          <p className="text-xs text-slate-500 font-mono mt-1">
+            Click anywhere on the map to fetch real-time soil & weather data · Draw to select an area
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleSaveField}
-            className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-mono transition-all flex items-center gap-2 shadow-lg shadow-emerald-950/50"
-          >
-            {savedSuccess ? <CheckCircle className="w-4 h-4 text-slate-950" /> : <Save className="w-4 h-4" />}
-            {savedSuccess ? "Saved to GISService!" : "Save Field Geometry"}
-          </button>
+        {/* Data Provider Badges */}
+        <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] font-bold">
+          {["NASA", "ARCGIS HUB", "HDX", "UNEP", "DIVA-GIS", "GEOFABRIK"].map((prov) => (
+            <span key={prov} className="px-2.5 py-1 rounded bg-emerald-100/80 text-emerald-900 border border-emerald-300">
+              {prov}
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* Map & Geometry Data Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Interactive Leaflet Map */}
-        <div className="lg:col-span-2 bg-slate-950 p-4 rounded-2xl border border-slate-800 shadow-xl flex flex-col">
-          <div className="flex items-center justify-between mb-3 px-2">
-            <span className="text-xs font-mono font-bold text-slate-300">Interactive Map View</span>
-            <span className="text-[11px] font-mono text-slate-500">Use Draw Toolbar to create Rectangle / Polygon</span>
+      {/* Map Workspace Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Drawer Panel */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-5 font-mono text-xs">
+          {/* Search Location Input */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search any location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-800 font-sans text-xs focus:outline-none focus:border-emerald-600"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           </div>
-          <div ref={mapContainerRef} className="w-full h-[500px] rounded-xl border border-slate-800 z-10"></div>
-        </div>
 
-        {/* Spatial Calculations & GeoJSON Metadata Panel */}
-        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-6 flex flex-col justify-between">
-          <div>
-            <h3 className="text-base font-bold text-white mb-4">Field Spatial Geometry</h3>
-
-            <div className="space-y-4 font-mono text-xs">
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                <span className="text-slate-500 font-bold block mb-1">CALCULATED AREA</span>
-                <span className="text-2xl font-extrabold text-emerald-400">{fieldArea || 4.5} <span className="text-xs font-normal text-slate-400">Hectares</span></span>
-                <p className="text-[11px] text-slate-500 mt-1">~{( (fieldArea || 4.5) * 2.471 ).toFixed(2)} Acres</p>
-              </div>
-
-              <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                <span className="text-slate-500 font-bold block mb-1">PERIMETER & CENTROID</span>
-                <span className="text-sm font-bold text-white">Perimeter: {fieldPerimeter || 850} m</span>
-                <p className="text-[11px] text-slate-400 mt-1">Centroid: [30.901° N, 75.857° E]</p>
-              </div>
-
-              <div>
-                <label className="text-slate-400 font-bold block mb-1">GeoJSON Representation:</label>
-                <textarea
-                  value={geoJsonData}
-                  onChange={(e) => setGeoJsonData(e.target.value)}
-                  rows={8}
-                  className="w-full p-3 bg-slate-900 border border-slate-800 rounded-xl font-mono text-[11px] text-slate-300 focus:outline-none focus:border-emerald-500"
-                ></textarea>
-              </div>
+          {/* Area Selection Toggles */}
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block">Area Selection</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200">
+                <Square className="w-3.5 h-3.5" /> Rectangle
+              </button>
+              <button className="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200">
+                <Hexagon className="w-3.5 h-3.5" /> Polygon
+              </button>
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-500 italic border-t border-slate-800 pt-3">
-            * Operational Cache TTL: 10 mins (`LOCATION_CACHE_HIT` / `MISS` logged).
+          {/* Layer Sub-Tabs */}
+          <div className="flex border-b border-slate-200 font-bold">
+            {(["Layers", "Location", "Sources"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-2 px-4 transition-all ${
+                  activeTab === tab ? "bg-[#1B4332] text-white rounded-t-xl" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
+
+          {/* Layer Controls */}
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                <input type="radio" name="base" defaultChecked className="accent-[#1B4332]" /> Satellite <span className="text-[10px] text-slate-400 font-normal">Esri / Maxar</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                <input type="radio" name="base" className="accent-[#1B4332]" /> Topographic <span className="text-[10px] text-slate-400 font-normal">CartoDB Voyager</span>
+              </label>
+            </div>
+
+            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block pt-2 border-t border-slate-200">
+              Overlays
+            </span>
+
+            <div className="space-y-2">
+              <div
+                onClick={() => setWorldSoil(!worldSoil)}
+                className={`p-3 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
+                  worldSoil ? "bg-amber-50 border-amber-300" : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                <input type="checkbox" checked={worldSoil} readOnly className="accent-amber-600 mt-0.5" />
+                <div>
+                  <strong className="text-slate-900 text-xs block">🟧 World Soil</strong>
+                  <span className="text-[10px] text-slate-500">ISRIC SoilGrids (Free)</span>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setNdviVegetation(!ndviVegetation)}
+                className={`p-3 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
+                  ndviVegetation ? "bg-emerald-50 border-emerald-300" : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                <input type="checkbox" checked={ndviVegetation} readOnly className="accent-emerald-600 mt-0.5" />
+                <div>
+                  <strong className="text-slate-900 text-xs block">🟩 NDVI Vegetation</strong>
+                  <span className="text-[10px] text-slate-500">NASA Earthdata (Free)</span>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setFloodRisk(!floodRisk)}
+                className={`p-3 rounded-xl border cursor-pointer flex items-start gap-2.5 transition-all ${
+                  floodRisk ? "bg-blue-50 border-blue-300" : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                <input type="checkbox" checked={floodRisk} readOnly className="accent-blue-600 mt-0.5" />
+                <div>
+                  <strong className="text-slate-900 text-xs block">🟦 Flood Risk</strong>
+                  <span className="text-[10px] text-slate-500">HOT OSM / Humanitarian (Free)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Map View */}
+        <div className="lg:col-span-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm relative flex flex-col">
+          {/* Active Overlay Pills on Top Right of Map */}
+          <div className="absolute top-6 right-6 z-20 flex items-center gap-2 font-mono text-[11px] font-bold">
+            {worldSoil && (
+              <span className="px-3 py-1 rounded-lg bg-amber-700 text-white flex items-center gap-1.5 shadow">
+                World Soil <X className="w-3 h-3 cursor-pointer" onClick={() => setWorldSoil(false)} />
+              </span>
+            )}
+            {ndviVegetation && (
+              <span className="px-3 py-1 rounded-lg bg-emerald-600 text-white flex items-center gap-1.5 shadow">
+                NDVI Vegetation <X className="w-3 h-3 cursor-pointer" onClick={() => setNdviVegetation(false)} />
+              </span>
+            )}
+          </div>
+
+          <div ref={mapContainerRef} className="w-full h-[540px] rounded-xl border border-slate-200 z-10"></div>
         </div>
       </div>
     </div>
