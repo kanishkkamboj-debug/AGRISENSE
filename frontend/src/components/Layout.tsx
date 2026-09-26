@@ -1,14 +1,14 @@
 import React, { ReactNode, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { BottomTelemetryBar } from "./BottomTelemetryBar";
-import { Menu, X, Download, Bell, Settings } from "lucide-react";
+import { Menu, X, Download, Bell, Settings, Cpu, ShieldCheck } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
 import { Link, useLocation } from "react-router-dom";
 
 export const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { activeFieldCondition } = useIoTData();
+  const { activeFieldCondition, systemMode, setSystemMode } = useIoTData();
 
   return (
     <div className="min-h-screen flex bg-[#0F1411] text-[#F0FDF4] font-sans antialiased selection:bg-[#34D399] selection:text-slate-950 pb-16">
@@ -40,18 +40,19 @@ export const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
               Agri-<span className="text-[#34D399] font-black">GISIntelligence</span>
             </Link>
 
-            {/* Top Subnav */}
-            <nav className="hidden md:flex items-center gap-6 ml-6 text-xs font-semibold font-mono text-[#9EB1A3]">
-              <Link to="/" className={location.pathname === "/" ? "text-[#34D399] font-bold border-b-2 border-[#34D399] pb-0.5" : "hover:text-white"}>
-                Dashboard
-              </Link>
-              <Link to="/reports" className={location.pathname === "/reports" ? "text-[#34D399] font-bold border-b-2 border-[#34D399] pb-0.5" : "hover:text-white"}>
-                Reports
-              </Link>
-              <Link to="/settings" className={location.pathname === "/settings" ? "text-[#34D399] font-bold border-b-2 border-[#34D399] pb-0.5" : "hover:text-white"}>
-                Settings
-              </Link>
-            </nav>
+            {/* System Mode Switcher Pill */}
+            <button
+              onClick={() => setSystemMode(systemMode === "REAL_IOT" ? "SIMULATION" : "REAL_IOT")}
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-[11px] font-extrabold border transition-all shadow-sm ${
+                systemMode === "REAL_IOT"
+                  ? "bg-[#14261B] text-[#34D399] border-[#24452F] hover:bg-[#1C3627]"
+                  : "bg-amber-950/60 text-amber-400 border-amber-800/60 hover:bg-amber-900/60"
+              }`}
+              title="Click to toggle system calculation mode"
+            >
+              <Cpu className="w-3.5 h-3.5 text-[#34D399]" />
+              <span>{systemMode === "REAL_IOT" ? "🌐 REAL IoT MODE (Live Physical Sensors Only)" : "🧪 SIMULATION MODE"}</span>
+            </button>
           </div>
 
           {/* Right Header Controls */}
