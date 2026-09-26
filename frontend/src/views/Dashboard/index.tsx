@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useIoTData } from "../../hooks/useIoTData";
+import { fetchTelemetryHistory } from "../../services/api";
 import { CropSelector } from "../../components/CropSelector";
 import { OfflineBanner } from "../../components/OfflineBanner";
 import { AskAgriSense } from "../../components/AskAgriSense";
@@ -23,6 +24,23 @@ export const DashboardView: React.FC = () => {
     deviceStatus,
     sseConnected,
   } = useIoTData();
+
+  const [historyDocs, setHistoryDocs] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadHistory() {
+      const docs = await fetchTelemetryHistory("FIELD-PUNJAB-01", 15);
+      setHistoryDocs(docs);
+    }
+    loadHistory();
+  }, [telemetry]);
+
+  const historyBars = historyDocs.length > 0
+    ? historyDocs.map((doc) => {
+        const sm = doc.measurements?.soil_moisture?.value;
+        return sm !== null && sm !== undefined ? Math.min(100, Math.max(10, sm * 1.5)) : 0;
+      }).reverse()
+    : [];
 
   const isLive = systemMode === "SIMULATION" || (deviceStatus !== "OFFLINE" && (freshnessState === "LIVE" || freshnessState === "RECENT"));
 
@@ -312,18 +330,25 @@ export const DashboardView: React.FC = () => {
               </span>
             </div>
 
-            <div className="h-36 flex items-end justify-between gap-1.5 pt-4">
-              {[40, 55, 60, 48, 70, 52, 65, 58, 75, 62, 80, 72, 85, isLive ? shiScore || 68 : 0, isLive ? shiScore || 50 : 0].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                  <div
-                    className={`w-full rounded-t transition-all ${
-                      (i === 13 || i === 14) && isLive ? "bg-[#34D399]" : i % 2 === 0 ? "bg-[#253228]" : "bg-[#1C251F]"
-                    }`}
-                    style={{ height: `${Math.min(100, Math.max(5, h))}%` }}
-                  ></div>
-                </div>
-              ))}
-            </div>
+            {historyBars.length === 0 ? (
+              <div className="h-36 flex flex-col items-center justify-center text-xs font-mono text-[#6B7C6F] border border-dashed border-[#202922] rounded-xl p-4 text-center">
+                <span className="font-bold text-slate-400">NO HISTORICAL TELEMETRY STORED</span>
+                <span className="text-[10px] opacity-75 mt-1">Waiting for physical ESP8266 telemetry packets</span>
+              </div>
+            ) : (
+              <div className="h-36 flex items-end justify-between gap-1.5 pt-4">
+                {historyBars.map((h, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                    <div
+                      className={`w-full rounded-t transition-all ${
+                        i === historyBars.length - 1 && isLive ? "bg-[#34D399]" : i % 2 === 0 ? "bg-[#253228]" : "bg-[#1C251F]"
+                      }`}
+                      style={{ height: `${Math.min(100, Math.max(5, h))}%` }}
+                    ></div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Loop Statistics Card */}

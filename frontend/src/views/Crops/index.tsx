@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useIoTData } from "../../hooks/useIoTData";
 import { CropSelector } from "../../components/CropSelector";
+import { updateDeviceConfig } from "../../services/api";
 import { analyzeTelemetryAgainstCrop } from "../../utils/agronomy";
 import { Play, RotateCcw, Droplets, TestTube, Sprout, Activity, RefreshCw, AlertTriangle, ShieldCheck, Thermometer, ShieldAlert, Radio } from "lucide-react";
 
@@ -9,6 +10,7 @@ export const CropsView: React.FC = () => {
   const [readingInterval, setReadingInterval] = useState<number>(5);
   const [sessionDuration, setSessionDuration] = useState<number>(60);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [scanStatusMessage, setScanStatusMessage] = useState<string | null>(null);
 
   const isLive = systemMode === "SIMULATION" || freshnessState === "LIVE" || freshnessState === "RECENT";
 
@@ -21,8 +23,18 @@ export const CropsView: React.FC = () => {
   const nitrogenVal = m.nitrogen?.value ?? null;
   const tempVal = m.soil_temperature?.value ?? m.ambient_temperature?.value ?? null;
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
+    if (!isLive && systemMode === "REAL_IOT") {
+      setScanStatusMessage("🔴 DEVICE OFFLINE — Reconnect ESP8266 to initiate scan session.");
+      setTimeout(() => setScanStatusMessage(null), 4000);
+      return;
+    }
     setIsScanning(true);
+    const ok = await updateDeviceConfig(readingInterval);
+    if (ok) {
+      setScanStatusMessage(`✓ Scan session active! Downlink config sent to ESP8266 (${readingInterval}s interval).`);
+      setTimeout(() => setScanStatusMessage(null), 4000);
+    }
   };
 
   const handleReset = () => {
@@ -56,6 +68,14 @@ export const CropsView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {scanStatusMessage && (
+        <div className={`p-4 rounded-xl font-mono text-xs font-bold border ${
+          scanStatusMessage.includes("OFFLINE") ? "bg-red-950/60 border-red-800 text-red-300" : "bg-[#14261B] border-[#23422F] text-[#34D399]"
+        }`}>
+          {scanStatusMessage}
+        </div>
+      )}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

@@ -380,4 +380,45 @@ export class TelemetryController {
       res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
     }
   }
+
+  // POST /api/v1/device/config
+  static async updateDeviceConfig(req: Request, res: Response): Promise<void> {
+    try {
+      const { deviceId, telemetryIntervalSeconds } = req.body;
+      const targetId = deviceId || "AGRISENSE-ESP8266-001";
+      const interval = Number(telemetryIntervalSeconds) || 5;
+
+      const updated = await DeviceModel.findOneAndUpdate(
+        { deviceId: targetId },
+        { $set: { "config.telemetryIntervalSeconds": interval, "config.lastConfigUpdated": new Date().toISOString() } },
+        { upsert: true, new: true }
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Hardware configuration updated. Telemetry sampling interval set to ${interval}s.`,
+        config: updated?.config || { telemetryIntervalSeconds: interval },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
+    }
+  }
+
+  // GET /api/v1/device/config
+  static async getDeviceConfig(req: Request, res: Response): Promise<void> {
+    try {
+      const deviceId = (req.query.deviceId as string) || "AGRISENSE-ESP8266-001";
+      const dev = await DeviceModel.findOne({ deviceId }).lean();
+
+      res.status(200).json({
+        success: true,
+        deviceId,
+        config: dev?.config || { telemetryIntervalSeconds: 5 },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
+    }
+  }
 }

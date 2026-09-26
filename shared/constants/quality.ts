@@ -53,9 +53,29 @@ export const FRESHNESS_STATES: Record<FreshnessState, FreshnessState> = {
   NO_DATA: "NO_DATA",
 };
 
+export type DataProvenance =
+  | "MEASURED"
+  | "DERIVED"
+  | "ESTIMATED"
+  | "EXTERNAL"
+  | "KNOWLEDGE_BASE"
+  | "HISTORICAL"
+  | "UNAVAILABLE";
+
+export const DATA_PROVENANCES: Record<DataProvenance, DataProvenance> = {
+  MEASURED: "MEASURED",
+  DERIVED: "DERIVED",
+  ESTIMATED: "ESTIMATED",
+  EXTERNAL: "EXTERNAL",
+  KNOWLEDGE_BASE: "KNOWLEDGE_BASE",
+  HISTORICAL: "HISTORICAL",
+  UNAVAILABLE: "UNAVAILABLE",
+};
+
 export const CONFIDENCE_LEVELS: Record<ConfidenceLevel, ConfidenceLevel> = {
   HIGH: "HIGH",
   MEDIUM: "MEDIUM",
   LOW: "LOW",
   INSUFFICIENT_DATA: "INSUFFICIENT_DATA",
 };
+

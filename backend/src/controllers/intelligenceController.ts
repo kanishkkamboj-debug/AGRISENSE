@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { MockDataService } from "../services/MockDataService";
+import { ContextBuilder } from "../services/ContextService/ContextBuilder";
 import { IoTIntelligenceEngine } from "../services/IoTIntelligence/IoTIntelligenceEngine";
 import { AgriculturalEventModel } from "../models/AgriculturalEvent";
 import { TelemetryModel } from "../models/Telemetry";
@@ -7,7 +7,8 @@ import { logger } from "../utils/logger";
 
 export const getLiveIoTIntelligence = async (req: Request, res: Response): Promise<void> => {
   try {
-    const ctx = MockDataService.getMockContext("normal");
+    const fieldId = (req.query.fieldId as string) || "FIELD-PUNJAB-01";
+    const ctx = await ContextBuilder.buildContext(fieldId);
     const history = await TelemetryModel.find({ fieldId: ctx.field.fieldId }).sort({ timestamp: -1 }).limit(30).lean();
 
     const report = await IoTIntelligenceEngine.generateReport(ctx, history as any[]);
@@ -20,7 +21,8 @@ export const getLiveIoTIntelligence = async (req: Request, res: Response): Promi
 
 export const getWhyAnalysis = async (req: Request, res: Response): Promise<void> => {
   try {
-    const ctx = MockDataService.getMockContext("normal");
+    const fieldId = (req.query.fieldId as string) || "FIELD-PUNJAB-01";
+    const ctx = await ContextBuilder.buildContext(fieldId);
     const history = await TelemetryModel.find({ fieldId: ctx.field.fieldId }).sort({ timestamp: -1 }).limit(30).lean();
 
     const report = await IoTIntelligenceEngine.generateReport(ctx, history as any[]);
@@ -34,8 +36,9 @@ export const getWhyAnalysis = async (req: Request, res: Response): Promise<void>
 
 export const getWhatChanged = async (req: Request, res: Response): Promise<void> => {
   try {
+    const fieldId = (req.query.fieldId as string) || "FIELD-PUNJAB-01";
     const period = (req.query.period as "6h" | "24h") || "6h";
-    const ctx = MockDataService.getMockContext("normal");
+    const ctx = await ContextBuilder.buildContext(fieldId);
     const history = await TelemetryModel.find({ fieldId: ctx.field.fieldId }).sort({ timestamp: -1 }).limit(50).lean();
 
     const result = IoTIntelligenceEngine.getWhatChanged(ctx, history as any[], period);
@@ -48,8 +51,9 @@ export const getWhatChanged = async (req: Request, res: Response): Promise<void>
 
 export const getWhatIfSimulation = async (req: Request, res: Response): Promise<void> => {
   try {
+    const fieldId = (req.body.fieldId as string) || "FIELD-PUNJAB-01";
     const scenario = (req.body.scenario as "IRRIGATE_20MM" | "RAINFALL_30MM" | "HEATWAVE_5C") || "IRRIGATE_20MM";
-    const ctx = MockDataService.getMockContext("normal");
+    const ctx = await ContextBuilder.buildContext(fieldId);
 
     const result = IoTIntelligenceEngine.getWhatIfSimulation(ctx, scenario);
     res.json(result);
@@ -61,8 +65,9 @@ export const getWhatIfSimulation = async (req: Request, res: Response): Promise<
 
 export const getFieldReplay = async (req: Request, res: Response): Promise<void> => {
   try {
+    const fieldId = (req.query.fieldId as string) || "FIELD-PUNJAB-01";
     const timeframe = (req.query.timeframe as "1h" | "6h" | "24h" | "7d") || "24h";
-    const ctx = MockDataService.getMockContext("normal");
+    const ctx = await ContextBuilder.buildContext(fieldId);
     const history = await TelemetryModel.find({ fieldId: ctx.field.fieldId }).sort({ timestamp: -1 }).limit(100).lean();
 
     const points = IoTIntelligenceEngine.getFieldReplay(ctx, history as any[], timeframe);

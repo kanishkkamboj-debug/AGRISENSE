@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CONFIDENCE_LEVELS = exports.FRESHNESS_STATES = exports.DATA_QUALITIES = exports.MEASUREMENT_STATES = void 0;
+exports.CONFIDENCE_LEVELS = exports.DATA_PROVENANCES = exports.FRESHNESS_STATES = exports.DATA_QUALITIES = exports.MEASUREMENT_STATES = void 0;
 exports.MEASUREMENT_STATES = {
     MEASURED: "MEASURED",
     CALCULATED: "CALCULATED",
@@ -23,6 +23,15 @@ exports.FRESHNESS_STATES = {
     STALE: "STALE",
     OFFLINE: "OFFLINE",
     NO_DATA: "NO_DATA",
+};
+exports.DATA_PROVENANCES = {
+    MEASURED: "MEASURED",
+    DERIVED: "DERIVED",
+    ESTIMATED: "ESTIMATED",
+    EXTERNAL: "EXTERNAL",
+    KNOWLEDGE_BASE: "KNOWLEDGE_BASE",
+    HISTORICAL: "HISTORICAL",
+    UNAVAILABLE: "UNAVAILABLE",
 };
 exports.CONFIDENCE_LEVELS = {
     HIGH: "HIGH",

@@ -17,6 +17,10 @@ export interface IDeviceDocument extends Document {
   weeklyUptimePercent: number;
   monthlyUptimePercent: number;
   firmwareVersion?: string;
+  config?: {
+    telemetryIntervalSeconds?: number;
+    lastConfigUpdated?: string;
+  };
   health: {
     cpuUsagePercent: number;
     ramUsagePercent: number;
@@ -73,6 +77,10 @@ const DeviceSchema = new Schema<IDeviceDocument>(
     weeklyUptimePercent: { type: Number, default: 100.0 },
     monthlyUptimePercent: { type: Number, default: 100.0 },
     firmwareVersion: { type: String, default: "v2.1.0-esp8266" },
+    config: {
+      telemetryIntervalSeconds: { type: Number, default: 5 },
+      lastConfigUpdated: { type: String },
+    },
     health: {
       cpuUsagePercent: { type: Number, default: 0 },
       ramUsagePercent: { type: Number, default: 0 },

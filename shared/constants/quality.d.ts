@@ -5,4 +5,6 @@ export type ConfidenceLevel = "HIGH" | "MEDIUM" | "LOW" | "INSUFFICIENT_DATA";
 export declare const MEASUREMENT_STATES: Record<MeasurementState, MeasurementState>;
 export declare const DATA_QUALITIES: Record<DataQuality, DataQuality>;
 export declare const FRESHNESS_STATES: Record<FreshnessState, FreshnessState>;
+export type DataProvenance = "MEASURED" | "DERIVED" | "ESTIMATED" | "EXTERNAL" | "KNOWLEDGE_BASE" | "HISTORICAL" | "UNAVAILABLE";
+export declare const DATA_PROVENANCES: Record<DataProvenance, DataProvenance>;
 export declare const CONFIDENCE_LEVELS: Record<ConfidenceLevel, ConfidenceLevel>;

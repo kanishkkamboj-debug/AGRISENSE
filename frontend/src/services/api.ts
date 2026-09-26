@@ -20,6 +20,32 @@ export async function fetchLatestTelemetry(fieldId = "FIELD-PUNJAB-01", mode = "
   };
 }
 
+export async function fetchTelemetryHistory(fieldId = "FIELD-PUNJAB-01", limit = 48): Promise<TelemetryRecord[]> {
+  try {
+    const res = await fetch(`${API_BASE}/telemetry/history?fieldId=${fieldId}&limit=${limit}`);
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data)) return json.data;
+  } catch (e) {
+    console.warn("History API error", e);
+  }
+  return [];
+}
+
+export async function updateDeviceConfig(telemetryIntervalSeconds: number, deviceId = "AGRISENSE-ESP8266-001"): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/v1/device/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId, telemetryIntervalSeconds }),
+    });
+    const json = await res.json();
+    return json.success;
+  } catch (e) {
+    console.warn("Update device config API error", e);
+    return false;
+  }
+}
+
 export async function fetchFields(): Promise<FieldContext[]> {
   try {
     const res = await fetch(`${API_BASE}/gis/fields`);

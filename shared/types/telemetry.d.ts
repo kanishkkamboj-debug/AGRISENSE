@@ -1,8 +1,9 @@
-import { MeasurementState, DataQuality, FreshnessState, SensorParameter } from "../constants";
+import { MeasurementState, DataQuality, FreshnessState, SensorParameter, DataProvenance } from "../constants";
 export interface MeasurementValue {
     value: number | null;
     unit: string;
     state: MeasurementState;
+    provenance?: DataProvenance;
     quality: DataQuality;
     lastUpdated?: string;
     source?: string;
