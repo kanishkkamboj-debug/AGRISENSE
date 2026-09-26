@@ -5,8 +5,54 @@ export class IrrigationAnalyzer {
   static analyze(ctx: AgriculturalContext): { findings: Finding[]; recommendation?: Recommendation } {
     const findings: Finding[] = [];
     const sm = ctx.telemetry.measurements.soil_moisture;
-    const currentMoisture = sm?.value ?? 42.0;
+    const isOffline = ctx.telemetry.freshnessState === "OFFLINE";
 
+    // Requirement 68, 69, 140: If IoT device is offline or soil moisture is unavailable, DO NOT invent values
+    if (isOffline || !sm || sm.value === null || sm.state === "UNAVAILABLE") {
+      const offlineEv: Evidence = {
+        parameter: "soil_moisture",
+        value: sm?.value ?? null,
+        unit: "%",
+        source: ctx.telemetry.deviceId,
+        timestamp: ctx.telemetry.timestamp,
+        quality: "MISSING",
+      };
+
+      findings.push({
+        description: isOffline
+          ? "IoT device is offline. Live soil moisture cannot be verified."
+          : "Soil moisture sensor data unavailable.",
+        severity: "HIGH",
+        evidence: [offlineEv],
+      });
+
+      const rec: Recommendation = {
+        id: `REC-IRR-OFFLINE-${Date.now()}`,
+        condition: "INSUFFICIENT_DATA" as any,
+        priority: "HIGH",
+        status: "PRESENTED",
+        action: {
+          title: "Verify Device Connectivity Before Irrigation",
+          steps: [
+            "Current soil moisture cannot be verified because the IoT device is offline or disconnected.",
+            "Reconnect the device and obtain a current moisture measurement before making an irrigation decision.",
+            "Inspect physical field moisture manually if immediate decision is required.",
+          ],
+          type: "IRRIGATION",
+        },
+        doNot: ["Apply automated irrigation based on stale or missing sensor readings"],
+        evidence: [offlineEv],
+        expectedOutcome: "Obtain verified live soil moisture measurement",
+        confidence: "LOW",
+        limitations: ["Device connectivity required for automated irrigation decision."],
+        knowledgeBaseVersion: "FAO-Irrigation-Paper-56",
+        createdAt: new Date().toISOString(),
+      };
+
+      return { findings, recommendation: rec };
+    }
+
+    const currentMoisture = sm.value;
     const minMoisture = ctx.crop.soil.moisture.min;
     const targetMoisture = (ctx.crop.soil.moisture.min + ctx.crop.soil.moisture.max) / 2;
 
@@ -18,7 +64,7 @@ export class IrrigationAnalyzer {
       unit: "%",
       source: ctx.telemetry.deviceId,
       timestamp: ctx.telemetry.timestamp,
-      quality: sm?.quality || "VALID",
+      quality: sm.quality || "VALID",
     };
 
     if (currentMoisture > 80) {

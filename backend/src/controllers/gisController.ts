@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { FieldModel } from "../models/Field";
-import { MockDataService } from "../services/MockDataService";
 import { locationCache } from "../utils/cache";
 
 export class GISController {
@@ -12,10 +11,38 @@ export class GISController {
         return;
       }
 
-      const docs = await FieldModel.find().lean();
-      let fields = docs;
+      let fields = await FieldModel.find().lean();
       if (fields.length === 0) {
-        fields = [MockDataService.getMockContext().field as any];
+        const defaultField = await FieldModel.findOneAndUpdate(
+          { fieldId: "FIELD-PUNJAB-01" },
+          {
+            $set: {
+              fieldId: "FIELD-PUNJAB-01",
+              name: "Field 01 - Main Demonstration Plot",
+              locationName: "Punjab Main Plot",
+              areaHectares: 4.5,
+              perimeterMeters: 850,
+              centroid: [30.901, 75.857],
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [75.855, 30.900],
+                    [75.860, 30.900],
+                    [75.860, 30.905],
+                    [75.855, 30.905],
+                    [75.855, 30.900],
+                  ],
+                ],
+              },
+              currentCropId: "wheat",
+              currentCropStage: "tillering",
+              deviceIds: ["AGRISENSE-ESP8266-001"],
+            },
+          },
+          { upsert: true, new: true }
+        ).lean();
+        fields = [defaultField as any];
       }
 
       locationCache.set("ALL_FIELDS", fields);

@@ -9,18 +9,25 @@ import {
   FileText,
   Settings,
   RefreshCw,
+  Radio,
+  Zap,
 } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
 
+import { ShieldAlert } from "lucide-react";
+
 export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ isOpen = true, onClose }) => {
   const location = useLocation();
-  const { activeFieldCondition, sseConnected } = useIoTData();
+  const { activeFieldCondition, sseConnected, freshnessState, systemMode, dataAgeSeconds } = useIoTData();
+  const isLive = systemMode === "SIMULATION" || freshnessState === "LIVE" || freshnessState === "RECENT";
 
   const navItems = [
     { label: "Dashboard", path: "/", icon: LayoutDashboard },
+    { label: "IoT Intelligence", path: "/iot-intelligence", icon: Zap },
+    { label: "Alert Center", path: "/alerts", icon: ShieldAlert },
     { label: "Map View", path: "/gis", icon: Map },
-    { label: "Crop Selection", path: "/advisory", icon: Sprout },
-    { label: "Soil/Weather Data", path: "/crops", icon: Activity },
+    { label: "Crop Advisory", path: "/advisory", icon: Sprout },
+    { label: "Soil & Crop Data", path: "/crops", icon: Activity },
     { label: "Analytics", path: "/analytics", icon: BarChart3 },
     { label: "Reports", path: "/reports", icon: FileText },
     { label: "Settings", path: "/settings", icon: Settings },
@@ -70,8 +77,10 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ 
         <div className="p-4 rounded-2xl bg-[#18211B] border border-[#26352B] space-y-2">
           <span className="text-[9px] font-bold uppercase tracking-wider text-[#6B7C6F] block">ACTIVE MODE</span>
           <div className="flex items-center gap-2">
-            <Sprout className="w-4 h-4 text-[#34D399]" />
-            <strong className="text-sm font-bold text-[#34D399]">{activeFieldCondition}</strong>
+            <Sprout className={`w-4 h-4 ${isLive ? "text-[#34D399]" : "text-amber-400"}`} />
+            <strong className={`text-sm font-bold ${isLive ? "text-[#34D399]" : "text-slate-400"}`}>
+              {isLive ? activeFieldCondition : "NO LIVE DATA"}
+            </strong>
           </div>
 
           <Link
@@ -82,11 +91,23 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ 
           </Link>
         </div>
 
-        {/* Live IoT Feed Pill */}
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#14261B] border border-[#23422F] text-[#34D399] text-[11px] font-bold">
+        {/* Live IoT Feed Status Pill */}
+        <div className={`flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-bold border ${
+          isLive
+            ? "bg-[#14261B] border-[#23422F] text-[#34D399]"
+            : freshnessState === "STALE"
+            ? "bg-amber-950/60 border-amber-800 text-amber-300"
+            : "bg-red-950/60 border-red-800 text-red-300"
+        }`}>
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#34D399] animate-ping"></span>
-            ● Live IoT Feed
+            <span className={`w-2 h-2 rounded-full ${isLive ? "bg-[#34D399] animate-ping" : "bg-red-400"}`}></span>
+            <span>
+              {isLive
+                ? "● Live IoT Feed"
+                : freshnessState === "STALE"
+                ? `⚠️ Stale (${dataAgeSeconds}s)`
+                : `🔴 Device Offline (${dataAgeSeconds}s)`}
+            </span>
           </span>
           <span className="text-[10px] font-mono text-[#6B7C6F]">{sseConnected ? "SSE" : "REST"}</span>
         </div>

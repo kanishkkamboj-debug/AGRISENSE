@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult } from "../../../../shared/types/recommendation";
+import { AgriculturalContext } from "../../../../shared/types/agriculture";
 import { logger } from "../../utils/logger";
 
 export class AIService {
@@ -25,15 +26,18 @@ export class AIService {
 
     try {
       const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const isOffline = (analysis.dataQuality?.overall as any) === "OFFLINE" || (analysis.condition?.code as any) === "OFFLINE";
 
       const prompt = `You are AgriSense AI, an expert precision agriculture advisor.
 Translate the following structured agricultural analysis JSON into clear, encouraging, action-oriented advisory language for a farmer.
 
-RULES:
+CRITICAL HARDWARE RULES:
 1. Speak directly to the farmer.
-2. Clearly state WHAT to do, WHY to do it, WHAT to avoid, and WHEN to re-check.
-3. NEVER invent or hallucinate any sensor numbers, dates, or crop thresholds not present in the input JSON.
-4. Keep the summary under 150 words.
+2. CURRENT DEVICE STATUS = ${isOffline ? "OFFLINE" : "ONLINE"}.
+3. If device is OFFLINE: You MUST explicitly distinguish historical/last known measurements from live measurements. Explain that current soil moisture/NPK cannot be verified until reconnected, and issue conditional recommendations. NEVER present historical numbers as live current state.
+4. Clearly state WHAT to do, WHY to do it, WHAT to avoid, and WHEN to re-check.
+5. NEVER invent or hallucinate any sensor numbers, dates, or crop thresholds not present in the input JSON.
+6. Keep the summary under 150 words.
 
 ANALYSIS JSON:
 ${JSON.stringify(analysis, null, 2)}`;
@@ -54,9 +58,64 @@ ${JSON.stringify(analysis, null, 2)}`;
     }
   }
 
+  static async askAgriSense(query: string, ctx: AgriculturalContext): Promise<{ answer: string; isAiGenerated: boolean }> {
+    const client = this.getClient();
+    const isOffline = ctx.telemetry.freshnessState === "OFFLINE";
+
+    if (!client) {
+      if (query.toLowerCase().includes("irrigate")) {
+        return {
+          answer: isOffline
+            ? "⚠️ Current soil moisture cannot be verified because the IoT device is offline. Reconnect the device and obtain a current moisture measurement before making an irrigation decision."
+            : "💧 Irrigation should be based on your crop stage threshold. Current telemetry indicates soil moisture is monitored.",
+          isAiGenerated: false,
+        };
+      }
+      return {
+        answer: isOffline
+          ? `⚠️ Device ${ctx.telemetry.deviceId} is currently OFFLINE. Last received packet was at ${ctx.telemetry.timestamp}. Reconnect hardware to view live field telemetry.`
+          : `🌱 Field ${ctx.field.name} is currently monitoring ${ctx.crop.name} (${ctx.currentStage.name} stage).`,
+        isAiGenerated: false,
+      };
+    }
+
+    try {
+      const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `You are AgriSense AI, an intelligent precision agriculture chat assistant.
+Answer the farmer's question using ONLY the provided real field context.
+
+RULES:
+1. Answer strictly based on actual available context.
+2. CURRENT DEVICE STATUS = ${isOffline ? "OFFLINE" : "ONLINE"}.
+3. If information is missing or device is OFFLINE, explicitly state what is missing or offline. NEVER invent telemetry values.
+4. Keep the response under 120 words, actionable and friendly.
+
+FARMER QUESTION: "${query}"
+
+FIELD CONTEXT JSON:
+${JSON.stringify(ctx, null, 2)}`;
+
+      const res = await model.generateContent(prompt);
+      return {
+        answer: res.response.text().trim(),
+        isAiGenerated: true,
+      };
+    } catch (err: any) {
+      return {
+        answer: `AgriSense Assistant: Unable to reach AI service (${err.message}). Current device status: ${isOffline ? "OFFLINE" : "ONLINE"}.`,
+        isAiGenerated: false,
+      };
+    }
+  }
+
   private static getDeterministicFallback(analysis: AnalysisResult): string {
     const cond = analysis.condition.code;
     const rec = analysis.recommendation[0];
+    const isOffline = (analysis.dataQuality?.overall as any) === "OFFLINE" || (cond as any) === "OFFLINE";
+
+    if (isOffline) {
+      return "⚠️ AGRISENSE DEVICE OFFLINE: Hardware telemetry stream is interrupted. Displayed readings are historical for reference only. Reconnect your ESP8266 IoT device to receive real-time biophysical advisories.";
+    }
 
     if (cond === "WATERLOGGING_RISK") {
       return "⚠️ URGENT WATERLOGGING ADVISORY: Soil moisture has exceeded crop safety thresholds for over 12 hours. Please open your lower field surface drainage channels immediately and suspend all irrigation and nitrogen fertilizer applications. Re-check the field after 6 hours.";

@@ -1,18 +1,12 @@
 import { Request, Response } from "express";
 import { TelemetryModel } from "../models/Telemetry";
-import { MockDataService } from "../services/MockDataService";
 
 export class ReportController {
   static async exportCsv(req: Request, res: Response): Promise<void> {
     try {
       const fieldId = (req.query.fieldId as string) || "FIELD-PUNJAB-01";
 
-      const docs = await TelemetryModel.find({ fieldId }).sort({ timestamp: -1 }).limit(200).lean();
-
-      let records = docs;
-      if (records.length === 0) {
-        records = [MockDataService.getMockTelemetry("normal") as any];
-      }
+      const records = await TelemetryModel.find({ fieldId }).sort({ timestamp: -1 }).limit(200).lean();
 
       let csv = "Timestamp,Device_ID,Field_ID,Soil_Moisture_%,Soil_Temp_C,Soil_Humidity_%,Soil_pH,Nitrogen_mgkg,Phosphorus_mgkg,Potassium_mgkg,Data_Quality,Freshness_State\n";
 

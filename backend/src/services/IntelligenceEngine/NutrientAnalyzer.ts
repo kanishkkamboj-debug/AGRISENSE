@@ -13,19 +13,19 @@ export class NutrientAnalyzer {
     const nTarget = ctx.currentStage.nutrientRequirement.n;
 
     if (!n || n.value === null || n.state === "UNAVAILABLE") {
+      const missingEv: Evidence = {
+        parameter: "nitrogen",
+        value: null,
+        unit: "mg/kg",
+        source: ctx.telemetry.deviceId,
+        timestamp: ctx.telemetry.timestamp,
+        quality: "MISSING",
+      };
+      evidence.push(missingEv);
       findings.push({
         description: "Nitrogen sensor data unavailable. Soil test or physical hardware connection required.",
         severity: "LOW",
-        evidence: [
-          {
-            parameter: "nitrogen",
-            value: null,
-            unit: "mg/kg",
-            source: ctx.telemetry.deviceId,
-            timestamp: ctx.telemetry.timestamp,
-            quality: "MISSING",
-          },
-        ],
+        evidence: [missingEv],
       });
     } else {
       const ev: Evidence = {
@@ -45,6 +45,46 @@ export class NutrientAnalyzer {
           evidence: [ev],
         });
       }
+    }
+
+    if (!p || p.value === null || p.state === "UNAVAILABLE") {
+      evidence.push({
+        parameter: "phosphorus",
+        value: null,
+        unit: "mg/kg",
+        source: ctx.telemetry.deviceId,
+        timestamp: ctx.telemetry.timestamp,
+        quality: "MISSING",
+      });
+    } else {
+      evidence.push({
+        parameter: "phosphorus",
+        value: p.value,
+        unit: p.unit,
+        source: ctx.telemetry.deviceId,
+        timestamp: ctx.telemetry.timestamp,
+        quality: p.quality,
+      });
+    }
+
+    if (!k || k.value === null || k.state === "UNAVAILABLE") {
+      evidence.push({
+        parameter: "potassium",
+        value: null,
+        unit: "mg/kg",
+        source: ctx.telemetry.deviceId,
+        timestamp: ctx.telemetry.timestamp,
+        quality: "MISSING",
+      });
+    } else {
+      evidence.push({
+        parameter: "potassium",
+        value: k.value,
+        unit: k.unit,
+        source: ctx.telemetry.deviceId,
+        timestamp: ctx.telemetry.timestamp,
+        quality: k.quality,
+      });
     }
 
     return { findings, evidence };

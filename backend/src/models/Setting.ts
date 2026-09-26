@@ -8,6 +8,11 @@ export interface ISettingDocument extends Document {
   units: "METRIC" | "IMPERIAL";
   timezone: string;
   thresholds: Record<string, { min: number; max: number }>;
+  deviceTimeouts: {
+    onlineSeconds: number;
+    staleSeconds: number;
+    offlineSeconds: number;
+  };
   displayPreferences: {
     refreshIntervalSeconds: number;
     defaultMapLayer: "STREETS" | "SATELLITE" | "TERRAIN";
@@ -27,6 +32,11 @@ const SettingSchema = new Schema<ISettingDocument>(
     units: { type: String, enum: ["METRIC", "IMPERIAL"], default: "METRIC" },
     timezone: { type: String, default: "Asia/Kolkata" },
     thresholds: { type: Schema.Types.Mixed, default: {} },
+    deviceTimeouts: {
+      onlineSeconds: { type: Number, default: 30 },
+      staleSeconds: { type: Number, default: 120 },
+      offlineSeconds: { type: Number, default: 120 },
+    },
     displayPreferences: {
       refreshIntervalSeconds: { type: Number, default: 2 },
       defaultMapLayer: { type: String, enum: ["STREETS", "SATELLITE", "TERRAIN"], default: "STREETS" },

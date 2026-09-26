@@ -8,6 +8,10 @@
     "frontend"
   ],
   "scripts": {
+    "dev:backend": "npm run dev --workspace=@agrisense/backend",
+    "dev:frontend": "npm run dev --workspace=@agrisense/frontend",
+    "dev": "npm run build:shared && npm run dev:backend",
+    "start": "npm run start --workspace=@agrisense/backend",
     "typecheck:shared": "npm run typecheck --workspace=@agrisense/shared",
     "typecheck:backend": "npm run typecheck --workspace=@agrisense/backend",
     "typecheck:frontend": "npm run typecheck --workspace=@agrisense/frontend",

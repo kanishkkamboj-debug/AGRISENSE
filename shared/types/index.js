@@ -19,3 +19,4 @@ __exportStar(require("./device"), exports);
 __exportStar(require("./agriculture"), exports);
 __exportStar(require("./recommendation"), exports);
 __exportStar(require("./api"), exports);
+__exportStar(require("./intelligence"), exports);

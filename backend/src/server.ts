@@ -31,8 +31,9 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// API Routes Boundary
+// API Routes Boundary & Hardware Aliases
 app.use("/api/v1/device", deviceRoutes);
+app.use("/api/iot", deviceRoutes); // Direct alias for ESP8266 microcontrollers (/api/iot/telemetry)
 app.use("/api/v1/public", publicRoutes);
 
 // Global Error Handler
@@ -48,8 +49,13 @@ mongoose
     logger.warn(`MongoDB connection failed (${err.message}). Running with in-memory / mock fallback.`);
   });
 
-const server = app.listen(PORT, () => {
-  logger.info(`AgriSense IoT Backend running on http://localhost:${PORT}`);
+import { DeviceConnectivityService } from "./services/DeviceConnectivityService";
+
+// Start background device connectivity monitoring loop
+DeviceConnectivityService.startMonitoring(5000);
+
+const server = app.listen(Number(PORT), "0.0.0.0", () => {
+  logger.info(`AgriSense IoT Backend running on http://0.0.0.0:${PORT} (Accessible on network at http://10.15.11.228:${PORT})`);
 });
 
 // Graceful Shutdown Handler

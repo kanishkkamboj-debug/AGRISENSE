@@ -3,6 +3,8 @@ import { TelemetryRecord } from "../../../../shared/types/telemetry";
 import { CROP_PROFILES } from "../../../../knowledge-base/crops";
 import { TelemetryModel } from "../../models/Telemetry";
 import { FieldModel } from "../../models/Field";
+import { DeviceModel } from "../../models/Device";
+import { DataFreshnessService } from "../DataFreshnessService";
 import { MockDataService } from "../MockDataService";
 import { logger } from "../../utils/logger";
 
@@ -45,18 +47,32 @@ export class ContextBuilder {
           areaHectares: 4.5,
           perimeterMeters: 850,
           centroid: [30.901, 75.857],
-          geometry: {},
+          geometry: {
+            type: "Polygon",
+            coordinates: [
+              [
+                [75.855, 30.900],
+                [75.860, 30.900],
+                [75.860, 30.905],
+                [75.855, 30.905],
+                [75.855, 30.900],
+              ],
+            ],
+          },
           currentCropId: "wheat",
           currentCropStage: "tillering",
           deviceIds: ["PI5-FIELD-001"],
         };
       }
 
-      // 2. Fetch Latest Telemetry for field
+      // 2. Fetch Latest Telemetry and Device status for field
       const latestDoc = await TelemetryModel.findOne({ fieldId }).sort({ timestamp: -1 }).lean();
+      const devDoc = await DeviceModel.findOne({ fieldId }).lean();
+      const isDeviceOffline = devDoc?.status === "OFFLINE";
 
       let telemetry: TelemetryRecord;
       if (latestDoc) {
+        const computedFreshness = isDeviceOffline ? "OFFLINE" : DataFreshnessService.getFreshnessState(latestDoc.timestamp);
         telemetry = {
           id: latestDoc._id.toString(),
           deviceId: latestDoc.deviceId,
@@ -64,7 +80,7 @@ export class ContextBuilder {
           timestamp: latestDoc.timestamp,
           measurements: parseMeasurements(latestDoc.measurements),
           qualitySummary: latestDoc.qualitySummary as any,
-          freshnessState: latestDoc.freshnessState as any,
+          freshnessState: computedFreshness as any,
           dataMode: "REAL",
         };
       } else {
@@ -82,7 +98,7 @@ export class ContextBuilder {
             phosphorus: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
             potassium: { value: null, unit: "mg/kg", state: "UNAVAILABLE", quality: "MISSING", source: "RS485" },
           },
-          qualitySummary: "INVALID",
+          qualitySummary: "MISSING",
           freshnessState: "NO_DATA",
           dataMode: "REAL",
         };

@@ -5,9 +5,18 @@ export interface IDeviceDocument extends Document {
   fieldId?: string;
   deviceModel: string;
   agentVersion: string;
-  status: "ONLINE" | "OFFLINE" | "MAINTENANCE";
+  status: "ONLINE" | "STALE" | "OFFLINE" | "RECONNECTING" | "MAINTENANCE";
   lastHeartbeat: string;
   lastTelemetry?: string;
+  lastSeen?: string;
+  offlineStartedAt?: string;
+  lastReconnectedAt?: string;
+  lastOutageDurationSeconds?: number;
+  totalDisconnectsCount: number;
+  dailyUptimePercent: number;
+  weeklyUptimePercent: number;
+  monthlyUptimePercent: number;
+  firmwareVersion?: string;
   health: {
     cpuUsagePercent: number;
     ramUsagePercent: number;
@@ -18,6 +27,7 @@ export interface IDeviceDocument extends Document {
     wifiSignalDbm?: number;
     lastHeartbeat: string;
     bufferedTelemetryCount: number;
+    packetsReceived?: number;
     sensorErrors: string[];
   };
   capabilities: any[];
@@ -49,11 +59,20 @@ const DeviceSchema = new Schema<IDeviceDocument>(
   {
     deviceId: { type: String, required: true, unique: true, index: true },
     fieldId: { type: String, index: true },
-    deviceModel: { type: String, default: "Raspberry Pi 5" },
+    deviceModel: { type: String, default: "ESP8266" },
     agentVersion: { type: String, default: "1.0.0" },
-    status: { type: String, enum: ["ONLINE", "OFFLINE", "MAINTENANCE"], default: "ONLINE" },
+    status: { type: String, enum: ["ONLINE", "STALE", "OFFLINE", "RECONNECTING", "MAINTENANCE"], default: "ONLINE" },
     lastHeartbeat: { type: String, default: () => new Date().toISOString() },
     lastTelemetry: { type: String },
+    lastSeen: { type: String },
+    offlineStartedAt: { type: String },
+    lastReconnectedAt: { type: String },
+    lastOutageDurationSeconds: { type: Number, default: 0 },
+    totalDisconnectsCount: { type: Number, default: 0 },
+    dailyUptimePercent: { type: Number, default: 100.0 },
+    weeklyUptimePercent: { type: Number, default: 100.0 },
+    monthlyUptimePercent: { type: Number, default: 100.0 },
+    firmwareVersion: { type: String, default: "v2.1.0-esp8266" },
     health: {
       cpuUsagePercent: { type: Number, default: 0 },
       ramUsagePercent: { type: Number, default: 0 },
@@ -64,6 +83,7 @@ const DeviceSchema = new Schema<IDeviceDocument>(
       wifiSignalDbm: { type: Number },
       lastHeartbeat: { type: String },
       bufferedTelemetryCount: { type: Number, default: 0 },
+      packetsReceived: { type: Number, default: 0 },
       sensorErrors: [{ type: String }],
     },
     capabilities: [SensorCapabilitySchema],

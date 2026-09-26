@@ -1,9 +1,9 @@
 import React from "react";
 import { useIoTData } from "../../hooks/useIoTData";
-import { Sprout, AlertTriangle, CloudRain, CheckCircle, ShieldAlert, Sparkles } from "lucide-react";
+import { Sprout, AlertTriangle, CloudRain, CheckCircle, Sparkles } from "lucide-react";
 
 export const AdvisoryView: React.FC = () => {
-  const { activeFieldCondition, setActiveFieldCondition } = useIoTData();
+  const { activeFieldCondition, setActiveFieldCondition, selectedCrop } = useIoTData();
 
   const states = [
     {
@@ -11,10 +11,10 @@ export const AdvisoryView: React.FC = () => {
       title: "Normal",
       subtitle: "Optimal soil conditions",
       icon: Sprout,
-      bg: "bg-[#EAF7EE]",
-      border: "border-emerald-300",
-      activeBorder: "ring-4 ring-emerald-600/40 border-emerald-600",
-      badgeBg: "bg-emerald-100 text-emerald-800",
+      bg: "bg-[#141A16]",
+      border: "border-[#202922]",
+      activeBorder: "ring-2 ring-[#34D399] border-[#34D399]",
+      badgeBg: "bg-[#34D399]/20 text-[#34D399]",
       description:
         "Field is in a healthy, productive state. Focus on maximizing yield through smart crop selection and balanced nutrient management.",
       indicators: [
@@ -29,10 +29,10 @@ export const AdvisoryView: React.FC = () => {
       title: "Drought",
       subtitle: "Water stress detected",
       icon: AlertTriangle,
-      bg: "bg-[#FEF6E6]",
-      border: "border-amber-300",
-      activeBorder: "ring-4 ring-amber-600/40 border-amber-600",
-      badgeBg: "bg-amber-100 text-amber-900",
+      bg: "bg-[#141A16]",
+      border: "border-[#202922]",
+      activeBorder: "ring-2 ring-amber-500 border-amber-500",
+      badgeBg: "bg-amber-500/20 text-amber-300",
       description:
         "Critical moisture deficit. Immediate water conservation strategies and drought-tolerant crop varieties are required.",
       indicators: [
@@ -47,10 +47,10 @@ export const AdvisoryView: React.FC = () => {
       title: "Flood",
       subtitle: "Water excess detected",
       icon: CloudRain,
-      bg: "bg-[#EBF3FE]",
-      border: "border-blue-300",
-      activeBorder: "ring-4 ring-blue-600/40 border-blue-600",
-      badgeBg: "bg-blue-100 text-blue-900",
+      bg: "bg-[#141A16]",
+      border: "border-[#202922]",
+      activeBorder: "ring-2 ring-blue-500 border-blue-500",
+      badgeBg: "bg-blue-500/20 text-blue-300",
       description:
         "Excess water is causing or risking waterlogging. Drainage action and flood-tolerant varieties must be deployed immediately.",
       indicators: [
@@ -63,19 +63,19 @@ export const AdvisoryView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto py-4 text-slate-800 font-sans">
+    <div className="space-y-8 max-w-6xl mx-auto py-4 text-[#F0FDF4] font-sans">
       {/* Page Title & Subtitle */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-black text-emerald-700 tracking-tight">
-          Select Field Condition
+        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+          Select Field Condition Mode
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 font-mono max-w-2xl mx-auto">
-          Choose the current state of your field. The AI engine will lock into this mode and generate targeted recommendations.
+        <p className="text-xs sm:text-sm text-[#8E9B91] font-mono max-w-2xl mx-auto">
+          Choose the active field environmental state for target crop: <strong className="text-[#34D399]">{selectedCrop?.name || "Wheat"}</strong>. The AI advisory engine will adjust recommendations accordingly.
         </p>
       </div>
 
       {/* 3 Interactive Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
         {states.map((st) => {
           const Icon = st.icon;
           const isSelected = activeFieldCondition === st.id;
@@ -84,39 +84,39 @@ export const AdvisoryView: React.FC = () => {
             <div
               key={st.id}
               onClick={() => setActiveFieldCondition(st.id)}
-              className={`p-6 rounded-3xl border-2 transition-all cursor-pointer shadow-sm flex flex-col justify-between space-y-6 ${st.bg} ${st.border} ${
-                isSelected ? st.activeBorder : "hover:scale-[1.01] hover:shadow-md"
+              className={`p-6 rounded-2xl border transition-all cursor-pointer shadow-sm flex flex-col justify-between space-y-6 ${st.bg} ${st.border} ${
+                isSelected ? st.activeBorder : "hover:border-[#34D399]/40"
               }`}
             >
               <div className="space-y-4">
                 {/* Icon & Title */}
                 <div className="flex items-center justify-between">
-                  <div className="p-3 rounded-2xl bg-white shadow-sm">
-                    <Icon className="w-8 h-8 text-slate-800" />
+                  <div className="p-3 rounded-xl bg-[#0F1411] border border-[#1F2922]">
+                    <Icon className="w-7 h-7 text-[#34D399]" />
                   </div>
                   {isSelected && (
-                    <span className="px-3 py-1 rounded-full bg-[#1B4332] text-white font-mono text-xs font-bold flex items-center gap-1 shadow">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> LOCKED
+                    <span className="px-3 py-1 rounded-full bg-[#34D399] text-[#08120B] font-mono text-xs font-extrabold flex items-center gap-1 shadow">
+                      <CheckCircle className="w-3.5 h-3.5" /> ACTIVE
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">{st.title}</h2>
-                  <p className="text-xs font-mono text-slate-500">{st.subtitle}</p>
+                  <h2 className="text-2xl font-black text-white tracking-tight">{st.title}</h2>
+                  <p className="text-xs font-mono text-[#8E9B91]">{st.subtitle}</p>
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed">{st.description}</p>
+                <p className="text-xs text-[#9EB1A3] leading-relaxed font-sans">{st.description}</p>
 
                 {/* Field Indicators */}
                 <div className="space-y-2 pt-2">
-                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider block">
+                  <span className="text-[10px] font-mono uppercase font-bold text-[#6B7C6F] tracking-wider block">
                     Field Indicators
                   </span>
-                  <ul className="space-y-1 font-mono text-xs text-slate-700">
+                  <ul className="space-y-1 font-mono text-xs text-white">
                     {st.indicators.map((ind, idx) => (
                       <li key={idx} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#34D399]"></span>
                         <span>{ind}</span>
                       </li>
                     ))}
@@ -125,8 +125,8 @@ export const AdvisoryView: React.FC = () => {
 
                 {/* AI Methods */}
                 <div className="space-y-2 pt-2">
-                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider block">
-                    AI Methods
+                  <span className="text-[10px] font-mono uppercase font-bold text-[#6B7C6F] tracking-wider block">
+                    Targeted Mitigation Strategies
                   </span>
                   <div className="flex flex-wrap gap-1.5 font-mono text-xs">
                     {st.aiMethods.map((mth, idx) => (
@@ -143,9 +143,9 @@ export const AdvisoryView: React.FC = () => {
       </div>
 
       {/* Lock State Action Button */}
-      <div className="flex justify-center pt-4">
-        <button className="px-8 py-3.5 rounded-2xl bg-[#1B4332] text-white font-bold text-sm flex items-center gap-2 shadow-lg hover:bg-[#143326] transition-all font-mono">
-          <Sparkles className="w-4 h-4 text-emerald-400" /> Active Mode Locked: {activeFieldCondition}
+      <div className="flex justify-center pt-4 font-mono">
+        <button className="px-8 py-3.5 rounded-2xl bg-[#34D399] text-[#08120B] font-extrabold text-sm flex items-center gap-2 shadow-lg shadow-[#34D399]/10 hover:bg-[#2DD4BF] transition-all">
+          <Sparkles className="w-4 h-4 fill-current" /> Active Condition Locked: {activeFieldCondition}
         </button>
       </div>
     </div>

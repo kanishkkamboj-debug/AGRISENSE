@@ -52,6 +52,15 @@ export interface Recommendation {
   updatedAt?: string;
 }
 
+export interface DataCompleteness {
+  iot: number;
+  weather: number;
+  crop: number;
+  gis: number;
+  soil: number;
+  npk: number;
+}
+
 export interface AnalysisResult {
   condition: {
     code: AgriculturalCondition;
@@ -64,6 +73,7 @@ export interface AnalysisResult {
   recommendation: Recommendation[];
   verification?: VerificationPlan;
   confidence: ConfidenceLevel;
+  dataCompleteness?: DataCompleteness;
   dataQuality: {
     overall: DataQuality;
     validParameters: number;

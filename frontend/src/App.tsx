@@ -10,6 +10,9 @@ import { AnalyticsView } from "./views/Analytics";
 import { ReportsView } from "./views/Reports";
 import { SettingsView } from "./views/Settings";
 
+import { AlertsView } from "./views/Alerts";
+import { IoTIntelligenceView } from "./views/IoTIntelligence";
+
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -17,7 +20,9 @@ export const App: React.FC = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<DashboardView />} />
+            <Route path="/iot-intelligence" element={<IoTIntelligenceView />} />
             <Route path="/advisory" element={<AdvisoryView />} />
+            <Route path="/alerts" element={<AlertsView />} />
             <Route path="/gis" element={<GISView />} />
             <Route path="/crops" element={<CropsView />} />
             <Route path="/analytics" element={<AnalyticsView />} />

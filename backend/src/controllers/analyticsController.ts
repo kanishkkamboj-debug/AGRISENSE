@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { TelemetryModel } from "../models/Telemetry";
-import { MockDataService } from "../services/MockDataService";
 
 export class AnalyticsController {
   static async getAnalytics(req: Request, res: Response): Promise<void> {
@@ -11,9 +10,6 @@ export class AnalyticsController {
       const docs = await TelemetryModel.find({ fieldId }).sort({ timestamp: -1 }).limit(100).lean();
 
       let telemetryList = docs;
-      if (telemetryList.length === 0) {
-        telemetryList = [MockDataService.getMockTelemetry("normal") as any];
-      }
 
       // Compute parameter statistics
       const paramStats: Record<string, { current: number | null; min: number; max: number; avg: number; trend: string }> = {};

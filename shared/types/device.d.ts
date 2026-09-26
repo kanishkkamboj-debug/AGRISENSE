@@ -29,14 +29,37 @@ export interface DeviceHealth {
     bufferedTelemetryCount: number;
     sensorErrors: string[];
 }
+export type DeviceStatus = "ONLINE" | "STALE" | "OFFLINE" | "RECONNECTING" | "MAINTENANCE";
+export interface DeviceHealth {
+    cpuUsagePercent: number;
+    ramUsagePercent: number;
+    cpuTemperatureCelsius: number;
+    uptimeSeconds: number;
+    networkStatus: "ONLINE" | "DEGRADED" | "OFFLINE";
+    ipAddress?: string;
+    wifiSignalDbm?: number;
+    firmwareVersion?: string;
+    lastHeartbeat: string;
+    bufferedTelemetryCount: number;
+    packetsReceived?: number;
+    sensorErrors: string[];
+}
 export interface DeviceRecord {
     deviceId: string;
     fieldId?: string;
     model: string;
     agentVersion: string;
-    status: "ONLINE" | "OFFLINE" | "MAINTENANCE";
+    status: DeviceStatus;
     lastHeartbeat: string;
     lastTelemetry?: string;
+    lastSeen?: string;
+    offlineStartedAt?: string;
+    lastReconnectedAt?: string;
+    lastOutageDurationSeconds?: number;
+    totalDisconnectsCount?: number;
+    dailyUptimePercent?: number;
+    weeklyUptimePercent?: number;
+    monthlyUptimePercent?: number;
     health: DeviceHealth;
     capabilities: SensorCapability[];
     sensors: SensorConfig[];
