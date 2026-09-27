@@ -7,8 +7,9 @@ import { AskAgriSense } from "../../components/AskAgriSense";
 import { ActionCenter } from "../../components/ActionCenter";
 import { DeviceConnectionTimeline } from "../../components/DeviceConnectionTimeline";
 import { DataQualityDashboard } from "../../components/DataQualityDashboard";
-import { analyzeTelemetryAgainstCrop } from "../../utils/agronomy";
-import { Sprout, AlertTriangle, Sun, Bug, Activity, RefreshCw, Cpu, Wifi, Radio } from "lucide-react";
+import { MagicMaker } from "../../components/MagicMaker";
+import { analyzeTelemetryAgainstCrop, formatTimeAgo } from "../../utils/agronomy";
+import { Sprout, AlertTriangle, Sun, Bug, Activity, RefreshCw, Cpu, Wifi, Radio, Scale, Map, ChevronRight, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const DashboardView: React.FC = () => {
@@ -52,7 +53,7 @@ export const DashboardView: React.FC = () => {
   const syncLatencyText = !isLive
     ? "DEVICE OFFLINE"
     : telemetry?.timestamp
-    ? `${dataAgeSeconds}s`
+    ? formatTimeAgo(dataAgeSeconds)
     : "STREAMING";
 
   return (
@@ -78,7 +79,7 @@ export const DashboardView: React.FC = () => {
                 ? "🧪 SIMULATION MODE"
                 : isLive
                 ? "🌐 REAL HARDWARE TELEMETRY (ESP8266)"
-                : `🔴 DEVICE OFFLINE (${dataAgeSeconds}s AGO)`}
+                : `🔴 DEVICE OFFLINE (${formatTimeAgo(dataAgeSeconds).toUpperCase()})`}
             </span>
           </div>
           <p className="text-xs text-[#8E9B91] font-mono mt-1 italic">
@@ -123,6 +124,107 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
+      {/* Dynamic Magic Maker Component */}
+      <MagicMaker />
+
+      {/* Quick Access & Live Monitors Section */}
+      <div className="bg-[#141A16] p-5 rounded-2xl border border-[#202922] shadow-sm space-y-4 font-mono">
+        <div className="flex items-center justify-between border-b border-[#202922] pb-3">
+          <h2 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[#34D399]" /> System Quick Access & Live Monitors
+          </h2>
+          <span className="text-[10px] text-[#8E9B91]">Direct System Portals & Endpoint Verification</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          {/* 1. Scientific Validation & Benchmarking */}
+          <Link
+            to="/validation"
+            className="p-4 rounded-xl bg-[#0F1411] border border-[#202922] hover:border-[#34D399]/50 transition-all group flex flex-col justify-between space-y-3 shadow-sm"
+          >
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white group-hover:text-[#34D399] transition-colors flex items-center gap-1.5">
+                  <Scale className="w-4 h-4 text-[#34D399]" /> Scientific Validation
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#34D399]/10 text-[#34D399] font-bold">RESEARCH</span>
+              </div>
+              <p className="text-[11px] text-[#8E9B91] font-sans leading-relaxed">
+                MAE/RMSE accuracy matrix, confusion matrix, & decision trace inspector.
+              </p>
+            </div>
+            <span className="text-[10px] text-[#34D399] font-bold flex items-center gap-1">
+              Open Validation View <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            </span>
+          </Link>
+
+          {/* 2. Deployment Monitor */}
+          <Link
+            to="/deployment"
+            className="p-4 rounded-xl bg-[#0F1411] border border-[#202922] hover:border-[#34D399]/50 transition-all group flex flex-col justify-between space-y-3 shadow-sm"
+          >
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white group-hover:text-[#34D399] transition-colors flex items-center gap-1.5">
+                  <Cpu className="w-4 h-4 text-[#34D399]" /> Deployment Monitor
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#34D399]/10 text-[#34D399] font-bold">HARDWARE</span>
+              </div>
+              <p className="text-[11px] text-[#8E9B91] font-sans leading-relaxed">
+                Hardware-in-the-loop diagnostics, packet rates, & ESP8266 state machine.
+              </p>
+            </div>
+            <span className="text-[10px] text-[#34D399] font-bold flex items-center gap-1">
+              Launch Monitor <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            </span>
+          </Link>
+
+          {/* 3. GIS Farm Map */}
+          <Link
+            to="/gis"
+            className="p-4 rounded-xl bg-[#0F1411] border border-[#202922] hover:border-[#34D399]/50 transition-all group flex flex-col justify-between space-y-3 shadow-sm"
+          >
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white group-hover:text-[#34D399] transition-colors flex items-center gap-1.5">
+                  <Map className="w-4 h-4 text-[#34D399]" /> GIS Farm Map
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#34D399]/10 text-[#34D399] font-bold">SPATIAL</span>
+              </div>
+              <p className="text-[11px] text-[#8E9B91] font-sans leading-relaxed">
+                Leaflet polygon boundaries, field block mapping, & area calculations.
+              </p>
+            </div>
+            <span className="text-[10px] text-[#34D399] font-bold flex items-center gap-1">
+              Open GIS Map <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+            </span>
+          </Link>
+
+          {/* 4. Backend Health Check */}
+          <a
+            href="http://localhost:5000/api/v1/public/validation/metrics"
+            target="_blank"
+            rel="noreferrer"
+            className="p-4 rounded-xl bg-[#0F1411] border border-[#202922] hover:border-[#34D399]/50 transition-all group flex flex-col justify-between space-y-3 shadow-sm"
+          >
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white group-hover:text-[#34D399] transition-colors flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-[#34D399]" /> Backend Health Check
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#34D399]/10 text-[#34D399] font-bold">REST API</span>
+              </div>
+              <p className="text-[11px] text-[#8E9B91] font-sans leading-relaxed">
+                Direct raw JSON API payload inspection endpoint on port 5000.
+              </p>
+            </div>
+            <span className="text-[10px] text-[#34D399] font-bold flex items-center gap-1">
+              Open API Endpoint <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </a>
+        </div>
+      </div>
+
       {/* Main Grid Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Health Architecture Donut & Dynamic Anomalies */}
@@ -131,7 +233,7 @@ export const DashboardView: React.FC = () => {
           <div className="bg-[#141A16] p-6 rounded-2xl border border-[#202922] shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono uppercase font-bold text-[#6B7C6F] tracking-wider">HEALTH ARCHITECTURE (SHI)</span>
-              <span className="text-[10px] font-mono text-[#8E9B91]">Target: {selectedCrop?.name || "Wheat"}</span>
+              <span className="text-[10px] font-mono text-[#8E9B91]">Target: {selectedCrop?.name || "Crop"}</span>
             </div>
 
             {/* Circular Gauge */}
@@ -198,7 +300,7 @@ export const DashboardView: React.FC = () => {
             {!isLive ? (
               <div className="bg-[#2B1A1E] p-4 rounded-xl border border-[#482027] text-xs text-[#FCA5A5] flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
-                <span>ESP8266 IoT Hardware Disconnected. Live sensor stream interrupted ({dataAgeSeconds}s ago).</span>
+                <span>ESP8266 IoT Hardware Disconnected. Live sensor stream interrupted ({formatTimeAgo(dataAgeSeconds)}).</span>
               </div>
             ) : anomalies.length === 0 ? (
               <div className="bg-[#0F1411] p-4 rounded-xl border border-[#1F2922] text-center text-xs text-[#34D399] flex items-center justify-center gap-2">
@@ -242,7 +344,7 @@ export const DashboardView: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-white font-sans">Optimal Range Delta</h3>
               <p className="text-[10px] text-[#6B7C6F]">
-                Syncing soil telemetry with {selectedCrop?.name || "Wheat"} requirements
+                Syncing soil telemetry with {selectedCrop?.name || "Crop"} requirements
               </p>
             </div>
 
@@ -372,7 +474,7 @@ export const DashboardView: React.FC = () => {
 
               <div className="flex justify-between p-3 rounded-xl bg-[#0F1411] border border-[#1F2922]">
                 <span className="text-[#8E9B91]">Packet Age</span>
-                <strong className="text-white font-extrabold">{dataAgeSeconds}s ago</strong>
+                <strong className="text-white font-extrabold">{formatTimeAgo(dataAgeSeconds)}</strong>
               </div>
             </div>
           </div>

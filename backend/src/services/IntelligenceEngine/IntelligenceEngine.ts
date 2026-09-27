@@ -4,6 +4,9 @@ import { SoilAnalyzer } from "./SoilAnalyzer";
 import { NutrientAnalyzer } from "./NutrientAnalyzer";
 import { IrrigationAnalyzer } from "./IrrigationAnalyzer";
 import { DisasterEngine } from "./DisasterEngine";
+import { EvidenceGate } from "./EvidenceGate";
+import { FertilizerEngine } from "./FertilizerEngine";
+import { TreatmentEngine } from "./TreatmentEngine";
 import { DataFreshnessService } from "../DataFreshnessService";
 
 import { ContextSnapshotModel } from "../../models/ContextSnapshot";
@@ -15,6 +18,31 @@ export class IntelligenceEngine {
     const recommendations: Recommendation[] = [];
 
     const isDeviceOffline = ctx.telemetry.freshnessState === "OFFLINE";
+
+    // 0. Evidence Gate Check
+    const gateRes = EvidenceGate.validate(ctx);
+    if (gateRes.status === "INSUFFICIENT_EVIDENCE") {
+      findings.push({
+        description: `INSUFFICIENT EVIDENCE: ${gateRes.reason}. Unsupported conditions: ${gateRes.unsupportedConditions.join(", ")}.`,
+        severity: "CRITICAL",
+        evidence: [
+          {
+            parameter: "telemetry_completeness",
+            value: "INSUFFICIENT",
+            unit: "",
+            source: ctx.telemetry.deviceId,
+            timestamp: ctx.telemetry.timestamp,
+            quality: "MISSING",
+          },
+        ],
+      });
+    } else if (gateRes.status === "PARTIAL") {
+      findings.push({
+        description: `PARTIAL EVIDENCE: ${gateRes.reason}. Missing parameters: ${gateRes.missingParameters.join(", ")}.`,
+        severity: "MEDIUM",
+        evidence: [],
+      });
+    }
 
     if (isDeviceOffline) {
       findings.push({
@@ -43,16 +71,28 @@ export class IntelligenceEngine {
     findings.push(...soilRes.findings);
     evidenceList.push(...soilRes.evidence);
 
-    // 3. Evaluate Nutrient Analyzer
+    // 3. Evaluate Nutrient Analyzer & Fertilizer Engine
     const nutrientRes = NutrientAnalyzer.analyze(ctx);
     findings.push(...nutrientRes.findings);
     evidenceList.push(...nutrientRes.evidence);
+
+    const fertRes = FertilizerEngine.analyze(ctx);
+    if (fertRes.recommendation) {
+      recommendations.push(fertRes.recommendation);
+    }
 
     // 4. Evaluate Irrigation Analyzer
     const irrRes = IrrigationAnalyzer.analyze(ctx);
     findings.push(...irrRes.findings);
     if (irrRes.recommendation) {
       recommendations.push(irrRes.recommendation);
+    }
+
+    // 5. Evaluate Treatment & Pest/Disease Risk Engine
+    const treatRes = TreatmentEngine.analyze(ctx);
+    if (treatRes.riskDetected && treatRes.finding && treatRes.recommendation) {
+      findings.push(treatRes.finding);
+      recommendations.push(treatRes.recommendation);
     }
 
     // Determine primary condition & severity
@@ -144,6 +184,7 @@ export class IntelligenceEngine {
       recommendation: recommendations,
       verification: recommendations[0]?.verification,
       confidence: confidenceLevel as any,
+      decisionSufficiency: gateRes.status === "INSUFFICIENT_EVIDENCE" ? "INSUFFICIENT" : gateRes.status === "PARTIAL" ? "PARTIAL" : "SUFFICIENT",
       dataCompleteness: {
         iot: iotCompleteness,
         weather: weatherCompleteness,

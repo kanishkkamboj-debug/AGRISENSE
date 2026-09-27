@@ -12,6 +12,8 @@ import { SettingsView } from "./views/Settings";
 
 import { AlertsView } from "./views/Alerts";
 import { IoTIntelligenceView } from "./views/IoTIntelligence";
+import { DeploymentMonitorView } from "./views/DeploymentMonitor";
+import { ScientificValidationView } from "./views/ScientificValidation";
 
 export const App: React.FC = () => {
   return (
@@ -20,6 +22,7 @@ export const App: React.FC = () => {
         <Layout>
           <Routes>
             <Route path="/" element={<DashboardView />} />
+            <Route path="/deployment" element={<DeploymentMonitorView />} />
             <Route path="/iot-intelligence" element={<IoTIntelligenceView />} />
             <Route path="/advisory" element={<AdvisoryView />} />
             <Route path="/alerts" element={<AlertsView />} />
@@ -27,6 +30,7 @@ export const App: React.FC = () => {
             <Route path="/crops" element={<CropsView />} />
             <Route path="/analytics" element={<AnalyticsView />} />
             <Route path="/reports" element={<ReportsView />} />
+            <Route path="/validation" element={<ScientificValidationView />} />
             <Route path="/settings" element={<SettingsView />} />
           </Routes>
         </Layout>

@@ -10,6 +10,7 @@ router.post("/telemetry", deviceIngestionLimiter, authenticateDevice, TelemetryC
 router.post("/heartbeat", deviceIngestionLimiter, authenticateDevice, TelemetryController.deviceHeartbeat);
 router.post("/config", TelemetryController.updateDeviceConfig);
 router.get("/config", TelemetryController.getDeviceConfig);
+router.post("/config/ack", TelemetryController.ackDeviceConfig);
 router.get("/status", TelemetryController.getDeviceStatus);
 router.get("/devices/:deviceId/status", TelemetryController.getDeviceStatus);
 

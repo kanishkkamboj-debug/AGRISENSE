@@ -5,7 +5,7 @@ import { TelemetryModel } from "../../models/Telemetry";
 import { FieldModel } from "../../models/Field";
 import { DeviceModel } from "../../models/Device";
 import { DataFreshnessService } from "../DataFreshnessService";
-import { MockDataService } from "../MockDataService";
+import { WeatherService } from "../WeatherService";
 import { logger } from "../../utils/logger";
 
 function parseMeasurements(measurements: any): Record<string, any> {
@@ -147,7 +147,28 @@ export class ContextBuilder {
       const crop = CROP_PROFILES[cropKey] || CROP_PROFILES.wheat;
       const currentStage = crop.growthStages.find((s) => s.id === field.currentCropStage) || crop.growthStages[0];
 
-      // 5. Construct unified AgriculturalContext
+      // 5. Fetch Weather
+      const weatherData = await WeatherService.getWeatherForLocation(field.centroid[0], field.centroid[1]);
+
+      const weatherObj = weatherData.isAvailable
+        ? {
+            currentTempCelsius: weatherData.currentTempCelsius ?? telemetry.measurements.soil_temperature?.value ?? 0,
+            currentHumidityPercent: weatherData.currentHumidityPercent ?? telemetry.measurements.soil_humidity?.value ?? 0,
+            recentRainfallMm24h: weatherData.recentRainfallMm24h ?? telemetry.measurements.rainfall?.value ?? 0,
+            forecastRainfallMm72h: weatherData.forecastRainfallMm72h ?? 0,
+            windSpeedKmh: weatherData.windSpeedKmh ?? 0,
+            source: weatherData.provider,
+          }
+        : {
+            currentTempCelsius: telemetry.measurements.soil_temperature?.value ?? telemetry.measurements.ambient_temperature?.value ?? 0,
+            currentHumidityPercent: telemetry.measurements.soil_humidity?.value ?? telemetry.measurements.ambient_humidity?.value ?? 0,
+            recentRainfallMm24h: telemetry.measurements.rainfall?.value ?? 0,
+            forecastRainfallMm72h: 0,
+            windSpeedKmh: 0,
+            source: "RS485-Sensors (Weather API Unavailable)",
+          };
+
+      // 6. Construct unified AgriculturalContext
       const context: AgriculturalContext = {
         field,
         crop,
@@ -175,14 +196,7 @@ export class ContextBuilder {
           provider: "Sentinel-2 L2A",
           available: true,
         },
-        weather: {
-          currentTempCelsius: telemetry.measurements.soil_temperature?.value || 25,
-          currentHumidityPercent: telemetry.measurements.soil_humidity?.value || 60,
-          recentRainfallMm24h: telemetry.measurements.rainfall?.value || 0,
-          forecastRainfallMm72h: 0,
-          windSpeedKmh: 10,
-          source: "RS485-Sensors",
-        },
+        weather: weatherObj,
       };
 
       logger.info(`CONTEXT_BUILDER_SUCCESS fieldId=${fieldId} dataMode=REAL_IOT timestamp=${telemetry.timestamp}`);

@@ -28,6 +28,8 @@ interface IoTContextType {
   setSelectedCropId: (id: string) => void;
   selectedStageId: string;
   setSelectedStageId: (id: string) => void;
+  selectedFieldId: string;
+  setSelectedFieldId: (id: string) => void;
   isConnected: boolean;
   sseConnected: boolean;
   packetCount: number;
@@ -52,8 +54,16 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [dataMode, setDataMode] = useState<"REAL" | "MOCK">("REAL");
   const [systemMode, setSystemMode] = useState<"REAL_IOT" | "SIMULATION">("REAL_IOT");
   const [cropsList, setCropsList] = useState<CropProfile[]>([]);
-  const [selectedCropId, setSelectedCropId] = useState<string>("wheat");
-  const [selectedStageId, setSelectedStageId] = useState<string>("tillering");
+  
+  const [selectedFieldId, setSelectedFieldIdState] = useState<string>(() => {
+    return localStorage.getItem("agrisense_selected_field") || "FIELD-PUNJAB-01";
+  });
+  const [selectedCropId, setSelectedCropIdState] = useState<string>(() => {
+    return localStorage.getItem("agrisense_selected_crop") || "wheat";
+  });
+  const [selectedStageId, setSelectedStageIdState] = useState<string>(() => {
+    return localStorage.getItem("agrisense_selected_stage") || "tillering";
+  });
 
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [sseConnected, setSseConnected] = useState<boolean>(false);
@@ -84,12 +94,39 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadCrops();
   }, []);
 
+  const handleSetSelectedCropId = (id: string) => {
+    setSelectedCropIdState(id);
+    localStorage.setItem("agrisense_selected_crop", id);
+    // Find crop growth stages and set default stage if current stage is not valid for new crop
+    const targetCrop = cropsList.find((c) => c.id === id);
+    if (targetCrop && targetCrop.growthStages && targetCrop.growthStages.length > 0) {
+      const hasStage = targetCrop.growthStages.some((s) => s.id === selectedStageId);
+      if (!hasStage) {
+        const newStageId = targetCrop.growthStages[0].id;
+        setSelectedStageIdState(newStageId);
+        localStorage.setItem("agrisense_selected_stage", newStageId);
+      }
+    }
+    addActivityLog(`Target Crop updated to ${targetCrop?.name || id}`, "info");
+  };
+
+  const handleSetSelectedStageId = (stageId: string) => {
+    setSelectedStageIdState(stageId);
+    localStorage.setItem("agrisense_selected_stage", stageId);
+  };
+
+  const handleSetSelectedFieldId = (fieldId: string) => {
+    setSelectedFieldIdState(fieldId);
+    localStorage.setItem("agrisense_selected_field", fieldId);
+    addActivityLog(`Selected Field updated to ${fieldId}`, "info");
+  };
+
   const selectedCrop = cropsList.find((c) => c.id === selectedCropId) || cropsList[0] || null;
 
   const loadData = useCallback(async () => {
     try {
       const [res, devRes] = await Promise.all([
-        fetchLatestTelemetry("FIELD-PUNJAB-01", systemMode),
+        fetchLatestTelemetry(selectedFieldId, systemMode),
         fetchDeviceStatus("AGRISENSE-ESP8266-001"),
       ]);
 
@@ -119,7 +156,7 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsConnected(false);
       setRetryCount((prev) => prev + 1);
     }
-  }, [isConnected, systemMode, addActivityLog]);
+  }, [selectedFieldId, isConnected, systemMode, addActivityLog]);
 
   // When system mode toggles, reload telemetry immediately!
   const handleSetSystemMode = (mode: "REAL_IOT" | "SIMULATION") => {
@@ -252,9 +289,11 @@ export const IoTProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         cropsList,
         selectedCrop,
         selectedCropId,
-        setSelectedCropId,
+        setSelectedCropId: handleSetSelectedCropId,
         selectedStageId,
-        setSelectedStageId,
+        setSelectedStageId: handleSetSelectedStageId,
+        selectedFieldId,
+        setSelectedFieldId: handleSetSelectedFieldId,
         isConnected,
         sseConnected,
         packetCount,

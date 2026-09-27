@@ -68,6 +68,7 @@ export interface AnalysisResult {
     recommendation: Recommendation[];
     verification?: VerificationPlan;
     confidence: ConfidenceLevel;
+    decisionSufficiency?: "SUFFICIENT" | "PARTIAL" | "INSUFFICIENT";
     dataCompleteness?: DataCompleteness;
     dataQuality: {
         overall: DataQuality;

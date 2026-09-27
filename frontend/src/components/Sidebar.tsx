@@ -11,10 +11,13 @@ import {
   RefreshCw,
   Radio,
   Zap,
+  Scale,
+  Cpu,
+  ExternalLink,
+  ShieldAlert,
 } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
-
-import { ShieldAlert } from "lucide-react";
+import { formatTimeAgo } from "../utils/agronomy";
 
 export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ isOpen = true, onClose }) => {
   const location = useLocation();
@@ -23,14 +26,17 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ 
 
   const navItems = [
     { label: "Dashboard", path: "/", icon: LayoutDashboard },
+    { label: "Scientific Validation", path: "/validation", icon: Scale },
+    { label: "Deployment Monitor", path: "/deployment", icon: Cpu },
+    { label: "GIS Farm Map", path: "/gis", icon: Map },
     { label: "IoT Intelligence", path: "/iot-intelligence", icon: Zap },
     { label: "Alert Center", path: "/alerts", icon: ShieldAlert },
-    { label: "Map View", path: "/gis", icon: Map },
     { label: "Crop Advisory", path: "/advisory", icon: Sprout },
     { label: "Soil & Crop Data", path: "/crops", icon: Activity },
     { label: "Analytics", path: "/analytics", icon: BarChart3 },
     { label: "Reports", path: "/reports", icon: FileText },
     { label: "Settings", path: "/settings", icon: Settings },
+    { label: "Backend Health Check", path: "http://localhost:5000/api/v1/public/validation/metrics", icon: ExternalLink, external: true },
   ];
 
   return (
@@ -53,12 +59,26 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ 
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
+            if (item.external) {
+              return (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#34D399] hover:text-white hover:bg-[#1A231C] font-semibold"
+                >
+                  <Icon className="w-4 h-4 text-[#34D399]" />
+                  <span>{item.label}</span>
+                </a>
+              );
+            }
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all ${
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
                   isActive
                     ? "bg-[#34D399] text-[#08120B] font-extrabold shadow-lg shadow-[#34D399]/10"
                     : "text-[#9EB1A3] hover:text-white hover:bg-[#1A231C]"
@@ -105,8 +125,8 @@ export const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({ 
               {isLive
                 ? "● Live IoT Feed"
                 : freshnessState === "STALE"
-                ? `⚠️ Stale (${dataAgeSeconds}s)`
-                : `🔴 Device Offline (${dataAgeSeconds}s)`}
+                ? `⚠️ Stale (${formatTimeAgo(dataAgeSeconds)})`
+                : `🔴 Device Offline (${formatTimeAgo(dataAgeSeconds)})`}
             </span>
           </span>
           <span className="text-[10px] font-mono text-[#6B7C6F]">{sseConnected ? "SSE" : "REST"}</span>

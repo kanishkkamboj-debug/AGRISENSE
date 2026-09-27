@@ -27,7 +27,7 @@ const TelemetrySchema = new Schema<ITelemetryDocument>(
     },
     qualitySummary: { type: String, required: true, default: "VALID" },
     freshnessState: { type: String, required: true, default: "LIVE" },
-    dataMode: { type: String, enum: ["REAL", "MOCK"], default: "REAL" },
+    dataMode: { type: String, enum: ["REAL", "SIMULATION"], default: "REAL" },
     syncStatus: { type: String, enum: ["PENDING", "SYNCHRONIZED"], default: "SYNCHRONIZED" },
   },
   { timestamps: true }

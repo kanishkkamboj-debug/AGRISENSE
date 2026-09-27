@@ -19,22 +19,41 @@ app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "5mb" }));
 
-// Health Check Endpoint
-app.get("/health", (_req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? "UP" : "DEGRADED";
-  res.status(200).json({
-    status: "UP",
+// Health Check Endpoints
+const getHealthStatus = () => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  const isWeatherConfigured = Boolean(process.env.OPENWEATHER_API_KEY);
+  const isAiConfigured = Boolean(process.env.GEMINI_API_KEY);
+
+  const overallStatus = isDbConnected ? "UP" : "DEGRADED";
+
+  return {
+    status: overallStatus,
     service: "agrisense-backend",
     version: "1.0.0",
-    database: dbStatus,
+    components: {
+      backend: "UP",
+      database: isDbConnected ? "UP" : "DOWN",
+      weather: isWeatherConfigured ? "CONFIGURED" : "UNAVAILABLE",
+      ai: isAiConfigured ? "CONFIGURED" : "UNAVAILABLE",
+    },
     timestamp: new Date().toISOString(),
-  });
+  };
+};
+
+app.get("/health", (_req, res) => {
+  res.status(200).json(getHealthStatus());
+});
+
+app.get("/api/health", (_req, res) => {
+  res.status(200).json(getHealthStatus());
 });
 
 // API Routes Boundary & Hardware Aliases
 app.use("/api/v1/device", deviceRoutes);
 app.use("/api/iot", deviceRoutes); // Direct alias for ESP8266 microcontrollers (/api/iot/telemetry)
 app.use("/api/v1/public", publicRoutes);
+app.use("/api", publicRoutes); // Direct alias for Requirement 12 endpoints (/api/crops, /api/weather, etc.)
 
 // Global Error Handler
 app.use(errorHandler);

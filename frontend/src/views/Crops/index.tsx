@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useIoTData } from "../../hooks/useIoTData";
 import { CropSelector } from "../../components/CropSelector";
 import { updateDeviceConfig } from "../../services/api";
-import { analyzeTelemetryAgainstCrop } from "../../utils/agronomy";
+import { analyzeTelemetryAgainstCrop, formatTimeAgo } from "../../utils/agronomy";
 import { Play, RotateCcw, Droplets, TestTube, Sprout, Activity, RefreshCw, AlertTriangle, ShieldCheck, Thermometer, ShieldAlert, Radio } from "lucide-react";
 
 export const CropsView: React.FC = () => {
@@ -105,7 +105,7 @@ export const CropsView: React.FC = () => {
                 </>
               ) : (
                 <span className="px-3 py-1.5 rounded-xl bg-red-950/60 text-red-300 border border-red-800 flex items-center gap-1.5">
-                  🔴 Device Offline ({dataAgeSeconds}s ago)
+                  🔴 Device Offline ({formatTimeAgo(dataAgeSeconds)})
                 </span>
               )}
             </div>

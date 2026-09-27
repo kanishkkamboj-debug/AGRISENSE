@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Activity, Map, BarChart3, Sprout, FileText, Settings, ShieldAlert, Cpu } from "lucide-react";
+import { Activity, Map, BarChart3, Sprout, FileText, Settings, ShieldAlert, Cpu, Scale } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
 
 export const Navbar: React.FC = () => {
@@ -9,11 +9,13 @@ export const Navbar: React.FC = () => {
 
   const navItems = [
     { label: "Dashboard", path: "/", icon: Activity },
+    { label: "Deployment Monitor", path: "/deployment", icon: Cpu },
     { label: "Daily Action Plan", path: "/advisory", icon: ShieldAlert },
     { label: "GIS Farm Map", path: "/gis", icon: Map },
     { label: "Crops", path: "/crops", icon: Sprout },
     { label: "Analytics", path: "/analytics", icon: BarChart3 },
     { label: "Reports", path: "/reports", icon: FileText },
+    { label: "Scientific Validation", path: "/validation", icon: Scale },
     { label: "Settings", path: "/settings", icon: Settings },
   ];
 

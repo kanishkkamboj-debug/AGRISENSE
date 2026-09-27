@@ -82,9 +82,16 @@ export async function fetchCrops(): Promise<CropProfile[]> {
   return [];
 }
 
-export async function fetchAdvisory(fieldId = "FIELD-PUNJAB-01", mode = "REAL_IOT"): Promise<AdvisoryResponse | null> {
+export async function fetchAdvisory(
+  fieldId = "FIELD-PUNJAB-01",
+  cropId = "wheat",
+  growthStage?: string,
+  mode = "REAL_IOT"
+): Promise<AdvisoryResponse | null> {
   try {
-    const res = await fetch(`${API_BASE}/advisories?fieldId=${fieldId}&mode=${mode}`);
+    let url = `${API_BASE}/advisories?fieldId=${fieldId}&cropId=${cropId}&mode=${mode}`;
+    if (growthStage) url += `&growthStage=${growthStage}`;
+    const res = await fetch(url);
     const json = await res.json();
     if (json.success && json.data) return json.data;
   } catch (e) {
@@ -93,13 +100,65 @@ export async function fetchAdvisory(fieldId = "FIELD-PUNJAB-01", mode = "REAL_IO
   return null;
 }
 
-export async function fetchAnalytics(fieldId = "FIELD-PUNJAB-01", range = "24h", mode = "REAL_IOT") {
+export async function fetchAnalytics(
+  fieldId = "FIELD-PUNJAB-01",
+  range = "24h",
+  cropId = "wheat",
+  mode = "REAL_IOT"
+) {
   try {
-    const res = await fetch(`${API_BASE}/analytics?fieldId=${fieldId}&range=${range}&mode=${mode}`);
+    const res = await fetch(`${API_BASE}/analytics?fieldId=${fieldId}&range=${range}&cropId=${cropId}&mode=${mode}`);
     const json = await res.json();
     if (json.success) return json.data;
   } catch (e) {
     console.warn("Analytics API error", e);
+  }
+  return null;
+}
+
+export async function fetchWeather(fieldId = "FIELD-PUNJAB-01") {
+  try {
+    const res = await fetch(`${API_BASE}/weather?fieldId=${fieldId}`);
+    const json = await res.json();
+    if (json.success) return json.data;
+  } catch (e) {
+    console.warn("Weather API error", e);
+  }
+  return null;
+}
+
+export async function fetchMagicMaker(
+  fieldId = "FIELD-PUNJAB-01",
+  cropId = "wheat",
+  growthStage?: string
+) {
+  try {
+    let url = `${API_BASE}/magic-maker?fieldId=${fieldId}&cropId=${cropId}`;
+    if (growthStage) url += `&growthStage=${growthStage}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.success) return json.data;
+  } catch (e) {
+    console.warn("Magic Maker API error", e);
+  }
+  return null;
+}
+
+export async function fetchAgronomyEvaluation(
+  fieldId = "FIELD-PUNJAB-01",
+  cropId = "wheat",
+  growthStage?: string
+) {
+  try {
+    const res = await fetch(`${API_BASE}/agronomy/evaluate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fieldId, cropId, growthStage }),
+    });
+    const json = await res.json();
+    if (json.success) return json.data;
+  } catch (e) {
+    console.warn("Agronomy evaluation API error", e);
   }
   return null;
 }

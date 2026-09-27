@@ -57,4 +57,39 @@ export class ActionController {
       res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
     }
   }
+
+  static async executeAction(req: Request, res: Response): Promise<void> {
+    try {
+      const { recommendationId, fieldId, cropId, conditionCode, actionTitle, parameterName, baselineValue, unit, notes } = req.body;
+      const { ActionVerificationService } = await import("../services/ActionVerificationService");
+
+      const tracker = await ActionVerificationService.recordActionExecution({
+        recommendationId: recommendationId || `REC-${Date.now()}`,
+        fieldId: fieldId || "FIELD-PUNJAB-01",
+        cropId: cropId || "wheat",
+        conditionCode: conditionCode || "MOISTURE_STRESS",
+        actionTitle: actionTitle || "Precision Irrigation Action",
+        parameterName: parameterName || "soil_moisture",
+        baselineValue: baselineValue !== undefined ? baselineValue : 32.5,
+        unit: unit || "%",
+        notes,
+      });
+
+      res.status(200).json({ success: true, data: tracker, message: "Closed-loop action recorded for verification", timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
+    }
+  }
+
+  static async getClosedLoopActions(req: Request, res: Response): Promise<void> {
+    try {
+      const fieldId = (req.query.fieldId as string) || "FIELD-PUNJAB-01";
+      const { ActionVerificationService } = await import("../services/ActionVerificationService");
+
+      const verifiedList = await ActionVerificationService.verifyPendingActions(fieldId);
+      res.status(200).json({ success: true, data: verifiedList, timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
+    }
+  }
 }

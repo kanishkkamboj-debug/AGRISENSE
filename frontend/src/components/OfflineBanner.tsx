@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AlertTriangle, WifiOff, CheckCircle2, Clock } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
+import { formatDurationDetailed } from "../utils/agronomy";
 
 export const OfflineBanner: React.FC = () => {
   const { deviceStatus, lastSeen, dataAgeSeconds, reconnectionNotification } = useIoTData();
@@ -15,10 +16,7 @@ export const OfflineBanner: React.FC = () => {
   }, [reconnectionNotification]);
 
   if (deviceStatus === "OFFLINE") {
-    const ageFormatted =
-      dataAgeSeconds > 60
-        ? `${Math.floor(dataAgeSeconds / 60)} minutes ${dataAgeSeconds % 60} seconds`
-        : `${dataAgeSeconds} seconds`;
+    const ageFormatted = formatDurationDetailed(dataAgeSeconds);
 
     return (
       <div className="bg-gradient-to-r from-red-950 via-rose-900 to-red-950 border border-red-800/80 rounded-2xl p-4 shadow-xl text-red-100 font-mono text-xs space-y-2 mb-6 animate-pulse">

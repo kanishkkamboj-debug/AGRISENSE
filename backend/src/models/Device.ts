@@ -19,6 +19,10 @@ export interface IDeviceDocument extends Document {
   firmwareVersion?: string;
   config?: {
     telemetryIntervalSeconds?: number;
+    configVersion?: number;
+    desiredAt?: string;
+    appliedAt?: string;
+    status?: "APPLIED" | "PENDING";
     lastConfigUpdated?: string;
   };
   health: {
@@ -79,6 +83,10 @@ const DeviceSchema = new Schema<IDeviceDocument>(
     firmwareVersion: { type: String, default: "v2.1.0-esp8266" },
     config: {
       telemetryIntervalSeconds: { type: Number, default: 5 },
+      configVersion: { type: Number, default: 1 },
+      desiredAt: { type: String },
+      appliedAt: { type: String },
+      status: { type: String, enum: ["APPLIED", "PENDING"], default: "APPLIED" },
       lastConfigUpdated: { type: String },
     },
     health: {

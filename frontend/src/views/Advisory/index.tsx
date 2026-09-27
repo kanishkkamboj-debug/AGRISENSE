@@ -1,9 +1,25 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useIoTData } from "../../hooks/useIoTData";
-import { Sprout, AlertTriangle, CloudRain, CheckCircle, Sparkles } from "lucide-react";
+import { CropSelector } from "../../components/CropSelector";
+import { fetchAgronomyEvaluation } from "../../services/api";
+import { Sprout, AlertTriangle, CloudRain, CheckCircle, Sparkles, RefreshCw, ShieldCheck, Info } from "lucide-react";
 
 export const AdvisoryView: React.FC = () => {
-  const { activeFieldCondition, setActiveFieldCondition, selectedCrop } = useIoTData();
+  const { activeFieldCondition, setActiveFieldCondition, selectedCrop, selectedCropId, selectedStageId, selectedFieldId } = useIoTData();
+  const [agronomyData, setAgronomyData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const res = await fetchAgronomyEvaluation(selectedFieldId, selectedCropId, selectedStageId);
+      if (res) {
+        setAgronomyData(res);
+      }
+      setLoading(false);
+    }
+    load();
+  }, [selectedFieldId, selectedCropId, selectedStageId]);
 
   const states = [
     {
@@ -15,14 +31,13 @@ export const AdvisoryView: React.FC = () => {
       border: "border-[#202922]",
       activeBorder: "ring-2 ring-[#34D399] border-[#34D399]",
       badgeBg: "bg-[#34D399]/20 text-[#34D399]",
-      description:
-        "Field is in a healthy, productive state. Focus on maximizing yield through smart crop selection and balanced nutrient management.",
+      description: `Field in optimal state for ${selectedCrop?.name || "crop"}. Focus on stage-specific nutrient management.`,
       indicators: [
-        "Soil Moisture: 40–60%",
-        "Rainfall: 10–30mm",
-        "pH: 6.0–7.0",
+        `Soil Moisture: ${selectedCrop?.soil?.moisture?.min || 35}–${selectedCrop?.soil?.moisture?.max || 65}%`,
+        `Target Temp: ${selectedCrop?.temperature?.optimal || 20}°C`,
+        `pH: ${selectedCrop?.soil?.preferredPH?.min || 6.0}–${selectedCrop?.soil?.preferredPH?.max || 7.5}`,
       ],
-      aiMethods: ["Crop Rotation", "Multi-Cropping", "Optimized Fertilizer Use"],
+      aiMethods: selectedCrop?.recommendations || ["Precision Irrigation", "Stage-Specific Fertilization"],
     },
     {
       id: "Drought" as const,
@@ -33,14 +48,13 @@ export const AdvisoryView: React.FC = () => {
       border: "border-[#202922]",
       activeBorder: "ring-2 ring-amber-500 border-amber-500",
       badgeBg: "bg-amber-500/20 text-amber-300",
-      description:
-        "Critical moisture deficit. Immediate water conservation strategies and drought-tolerant crop varieties are required.",
+      description: `Moisture deficit for ${selectedCrop?.name || "crop"}. Immediate water conservation and micro-irrigation required.`,
       indicators: [
-        "Soil Moisture: < 30%",
+        `Soil Moisture: < ${selectedCrop?.soil?.moisture?.min || 35}%`,
         "Rainfall: < 5mm",
-        "Temperature: > 30°C",
+        `Temp Spike: > ${selectedCrop?.temperature?.max || 30}°C`,
       ],
-      aiMethods: ["Drip Irrigation", "Drought-Resistant Crops"],
+      aiMethods: ["Drip Irrigation", "Mulching"],
     },
     {
       id: "Flood" as const,
@@ -51,28 +65,89 @@ export const AdvisoryView: React.FC = () => {
       border: "border-[#202922]",
       activeBorder: "ring-2 ring-blue-500 border-blue-500",
       badgeBg: "bg-blue-500/20 text-blue-300",
-      description:
-        "Excess water is causing or risking waterlogging. Drainage action and flood-tolerant varieties must be deployed immediately.",
+      description: `Excess saturation above ${selectedCrop?.name || "crop"} limit (${selectedCrop?.soil?.moisture?.max || 65}%). Surface drainage required immediately.`,
       indicators: [
-        "Soil Moisture: > 80%",
-        "Rainfall: > 45mm",
-        "Waterlogging risk",
+        `Soil Moisture: > ${selectedCrop?.soil?.moisture?.max || 65}%`,
+        "Rainfall: > 35mm",
+        "Waterlogging Risk",
       ],
-      aiMethods: ["Raised Beds", "Drainage Channels"],
+      aiMethods: ["Surface Drainage", "Pump De-watering"],
     },
   ];
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto py-4 text-[#F0FDF4] font-sans">
-      {/* Page Title & Subtitle */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-          Select Field Condition Mode
-        </h1>
-        <p className="text-xs sm:text-sm text-[#8E9B91] font-mono max-w-2xl mx-auto">
-          Choose the active field environmental state for target crop: <strong className="text-[#34D399]">{selectedCrop?.name || "Wheat"}</strong>. The AI advisory engine will adjust recommendations accordingly.
-        </p>
+      {/* Page Title & Crop Selector Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#141A16] border border-[#202922] shadow-sm">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            Crop Advisory Engine (ICAR-PAU Rules)
+          </h1>
+          <p className="text-xs sm:text-sm text-[#8E9B91] font-mono mt-1">
+            Target Crop: <strong className="text-[#34D399]">{selectedCrop?.name || "Wheat"}</strong> ({selectedCrop?.scientificName}). Deterministic rule evaluation.
+          </p>
+        </div>
+
+        <CropSelector />
       </div>
+
+      {/* Dynamic Agronomic Evaluation Summary Card */}
+      {loading ? (
+        <div className="p-6 rounded-2xl bg-[#141A16] border border-[#202922] text-center font-mono text-xs text-[#8E9B91] flex items-center justify-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin text-[#34D399]" />
+          <span>Evaluating ICAR-PAU rules for {selectedCrop?.name}...</span>
+        </div>
+      ) : agronomyData ? (
+        <div className="p-6 rounded-2xl bg-[#141A16] border border-[#202922] shadow-lg space-y-4 font-mono text-xs">
+          <div className="flex items-center justify-between border-b border-[#202922] pb-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-[#34D399]" />
+              <h2 className="text-sm font-black text-white uppercase tracking-wider">
+                Agronomic Decision: {agronomyData.status} ({agronomyData.riskLevel} RISK)
+              </h2>
+            </div>
+            <span className="text-[10px] px-2.5 py-1 rounded bg-[#34D399]/10 text-[#34D399] font-bold border border-[#34D399]/30">
+              Source: {agronomyData.decisionSource}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans text-xs">
+            <div className="p-4 rounded-xl bg-[#0F1411] border border-[#1F2922] space-y-1">
+              <span className="text-[10px] font-mono uppercase font-bold text-[#34D399] block">Irrigation Action</span>
+              <p className="text-white font-bold">{agronomyData.irrigationAction}</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#0F1411] border border-[#1F2922] space-y-1">
+              <span className="text-[10px] font-mono uppercase font-bold text-amber-400 block">Fertilizer Action</span>
+              <p className="text-white font-bold">{agronomyData.fertilizerAction}</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#0F1411] border border-[#1F2922] space-y-1">
+              <span className="text-[10px] font-mono uppercase font-bold text-sky-400 block">Pesticide Action</span>
+              <p className="text-white font-bold">{agronomyData.pesticideAction}</p>
+            </div>
+          </div>
+
+          {agronomyData.rulesTriggered && agronomyData.rulesTriggered.length > 0 && (
+            <div className="pt-2 border-t border-[#202922] space-y-2">
+              <span className="text-[10px] font-bold text-[#34D399] uppercase tracking-wider block">Triggered Deterministic Rules ({agronomyData.rulesTriggered.length})</span>
+              <div className="space-y-1">
+                {agronomyData.rulesTriggered.map((rule: any, i: number) => (
+                  <div key={i} className="p-3 rounded-xl bg-[#0F1411] border border-[#1F2922] flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-white block">{rule.ruleId || `Rule #${i+1}`} ({rule.crop})</span>
+                      <span className="text-[10px] text-[#8E9B91]">{rule.threshold}</span>
+                    </div>
+                    <span className="text-[10px] text-[#34D399] font-bold">
+                      {typeof rule.source === "string" ? rule.source : rule.source?.organization || "PAU/ICAR"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* 3 Interactive Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
@@ -111,7 +186,7 @@ export const AdvisoryView: React.FC = () => {
                 {/* Field Indicators */}
                 <div className="space-y-2 pt-2">
                   <span className="text-[10px] font-mono uppercase font-bold text-[#6B7C6F] tracking-wider block">
-                    Field Indicators
+                    {selectedCrop?.name} Indicators
                   </span>
                   <ul className="space-y-1 font-mono text-xs text-white">
                     {st.indicators.map((ind, idx) => (
@@ -129,7 +204,7 @@ export const AdvisoryView: React.FC = () => {
                     Targeted Mitigation Strategies
                   </span>
                   <div className="flex flex-wrap gap-1.5 font-mono text-xs">
-                    {st.aiMethods.map((mth, idx) => (
+                    {st.aiMethods.map((mth: string, idx: number) => (
                       <span key={idx} className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.badgeBg}`}>
                         {mth}
                       </span>
@@ -145,7 +220,7 @@ export const AdvisoryView: React.FC = () => {
       {/* Lock State Action Button */}
       <div className="flex justify-center pt-4 font-mono">
         <button className="px-8 py-3.5 rounded-2xl bg-[#34D399] text-[#08120B] font-extrabold text-sm flex items-center gap-2 shadow-lg shadow-[#34D399]/10 hover:bg-[#2DD4BF] transition-all">
-          <Sparkles className="w-4 h-4 fill-current" /> Active Condition Locked: {activeFieldCondition}
+          <Sparkles className="w-4 h-4 fill-current" /> Active Condition Locked: {activeFieldCondition} for {selectedCrop?.name}
         </button>
       </div>
     </div>

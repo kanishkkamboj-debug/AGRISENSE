@@ -256,3 +256,39 @@ export function analyzeTelemetryAgainstCrop(
     recommendations,
   };
 }
+
+/**
+ * Formats data age in seconds into human-friendly time ago strings.
+ * e.g., 45 -> "45s ago", 120 -> "2m ago", 3600 -> "1h ago", 89762 -> "1d ago"
+ */
+export function formatTimeAgo(seconds: number): string {
+  if (seconds === undefined || seconds === null || seconds < 0) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+/**
+ * Detailed duration format for banners and status descriptions.
+ */
+export function formatDurationDetailed(seconds: number): string {
+  if (seconds === undefined || seconds === null || seconds <= 0) return "0 seconds";
+  if (seconds >= 86400) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    return `${days} ${days === 1 ? "day" : "days"} ${hours} ${hours === 1 ? "hour" : "hours"}`;
+  }
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ${mins} ${mins === 1 ? "minute" : "minutes"}`;
+  }
+  if (seconds > 60) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins} ${mins === 1 ? "minute" : "minutes"} ${secs} ${secs === 1 ? "second" : "seconds"}`;
+  }
+  return `${seconds} ${seconds === 1 ? "second" : "seconds"}`;
+}
+

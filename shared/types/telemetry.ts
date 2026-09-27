@@ -6,6 +6,7 @@ export interface MeasurementValue {
   state: MeasurementState;
   provenance?: DataProvenance;
   quality: DataQuality;
+  calibrationStatus?: "VERIFIED" | "UNVERIFIED" | "CALIBRATION_REQUIRED";
   lastUpdated?: string;
   source?: string;
 }
@@ -20,7 +21,7 @@ export interface TelemetryRecord {
   measurements: MeasurementsMap;
   qualitySummary: DataQuality;
   freshnessState: FreshnessState;
-  dataMode: "REAL" | "MOCK";
+  dataMode: "REAL" | "SIMULATION";
   syncStatus?: "PENDING" | "SYNCHRONIZED";
 }
 

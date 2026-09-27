@@ -38,7 +38,7 @@ export class MockDataService {
       measurements: baseMeasurements,
       qualitySummary: "VALID",
       freshnessState: "LIVE",
-      dataMode: "MOCK",
+      dataMode: "SIMULATION" as const,
       syncStatus: "SYNCHRONIZED",
     };
   }

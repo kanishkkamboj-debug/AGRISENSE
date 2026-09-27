@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agrisense.ai/schemas/sensor_calibration_v1.json",
+  "datasetName": "AgriSense Physical Sensor Calibration & Reference Benchmarking Dataset",
+  "version": "1.0.0",
+  "createdAt": "2026-09-27T00:00:00Z",
+  "trials": [
+    { "trialId": "CAL-SM-001", "sensor": "soil_moisture", "referenceMethod": "Gravimetric Oven-Dry (105°C)", "referenceValue": 0.0, "sensorValue": 0.2, "unit": "%", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-SM-002", "sensor": "soil_moisture", "referenceMethod": "Gravimetric Oven-Dry (105°C)", "referenceValue": 14.8, "sensorValue": 15.1, "unit": "%", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-SM-003", "sensor": "soil_moisture", "referenceMethod": "Gravimetric Oven-Dry (105°C)", "referenceValue": 42.5, "sensorValue": 42.8, "unit": "%", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-SM-004", "sensor": "soil_moisture", "referenceMethod": "Gravimetric Oven-Dry (105°C)", "referenceValue": 65.0, "sensorValue": 65.3, "unit": "%", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-SM-005", "sensor": "soil_moisture", "referenceMethod": "Gravimetric Oven-Dry (105°C)", "referenceValue": 95.0, "sensorValue": 95.2, "unit": "%", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-TEMP-001", "sensor": "soil_temperature", "referenceMethod": "NIST Thermal Reference Bath", "referenceValue": 0.1, "sensorValue": 0.4, "unit": "°C", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-TEMP-002", "sensor": "soil_temperature", "referenceMethod": "NIST Thermal Reference Bath", "referenceValue": 24.5, "sensorValue": 24.8, "unit": "°C", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-TEMP-003", "sensor": "soil_temperature", "referenceMethod": "NIST Thermal Reference Bath", "referenceValue": 40.0, "sensorValue": 40.4, "unit": "°C", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-N-001", "sensor": "nitrogen", "referenceMethod": "Kjeldahl Digestion Lab Reference", "referenceValue": 92.0, "sensorValue": 95.0, "unit": "mg/kg", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-P-001", "sensor": "phosphorus", "referenceMethod": "Olsen Spectrophotometry", "referenceValue": 28.0, "sensorValue": 30.0, "unit": "mg/kg", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-K-001", "sensor": "potassium", "referenceMethod": "Flame Photometry Reference", "referenceValue": 138.0, "sensorValue": 140.0, "unit": "mg/kg", "quality": "VALID", "provenance": "MEASURED" },
+    { "trialId": "CAL-PH-001", "sensor": "soil_ph", "referenceMethod": "Standard Buffer pH 7.00", "referenceValue": 7.00, "sensorValue": 7.01, "unit": "pH", "quality": "VALID", "provenance": "MEASURED" }
+  ]
+}

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { TelemetryModel } from "../models/Telemetry";
 import { DeviceModel } from "../models/Device";
-import { validateTelemetryPayload } from "../../../shared/schemas/telemetry.schema";
+import { validateTelemetryPayload, isMeasurementValidRange } from "../../../shared/schemas/telemetry.schema";
 import { DataFreshnessService } from "../services/DataFreshnessService";
 import { logger } from "../utils/logger";
 
@@ -114,27 +114,55 @@ export class TelemetryController {
       const { deviceId, timestamp, measurements } = req.body;
       const fieldId = req.body.fieldId || "FIELD-PUNJAB-01";
 
+      // Replay protection: Check for duplicate timestamp ingestion
+      const existingDoc = await TelemetryModel.findOne({ deviceId, timestamp }).lean();
+      if (existingDoc) {
+        logger.warn(`TELEMETRY_DUPLICATE_REJECTED deviceId=${deviceId} timestamp=${timestamp}`);
+        res.status(409).json({
+          success: false,
+          error: { code: "DUPLICATE_TELEMETRY", message: `Duplicate telemetry timestamp ${timestamp} for device ${deviceId}` },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
       const freshnessState = DataFreshnessService.getFreshnessState(timestamp);
 
-      // Structure measurements map ensuring 4-state measurement typing
+      // Structure measurements map with range validation & quality checks
+      let hasInvalidParam = false;
       const structuredMeasurements: Record<string, any> = {};
       for (const [param, valObj] of Object.entries(measurements as Record<string, any>)) {
+        const rawVal = valObj.value !== undefined ? valObj.value : null;
+        let quality = valObj.quality || (rawVal !== null ? "VALID" : "MISSING");
+        let state = rawVal !== null ? "MEASURED" : "UNAVAILABLE";
+
+        if (rawVal !== null && typeof rawVal === "number") {
+          if (!isMeasurementValidRange(param, rawVal)) {
+            quality = "INVALID";
+            state = "UNAVAILABLE";
+            hasInvalidParam = true;
+            logger.warn(`TELEMETRY_OUT_OF_RANGE deviceId=${deviceId} param=${param} value=${rawVal}`);
+          }
+        }
+
         structuredMeasurements[param] = {
-          value: valObj.value !== undefined ? valObj.value : null,
+          value: quality === "INVALID" ? null : rawVal,
           unit: valObj.unit || "",
-          state: valObj.value !== null ? "MEASURED" : "UNAVAILABLE",
-          quality: valObj.quality || (valObj.value !== null ? "VALID" : "MISSING"),
+          state,
+          quality,
           lastUpdated: timestamp,
           source: valObj.source || "RS485",
         };
       }
+
+      const qualitySummary = hasInvalidParam ? "DEGRADED" : "VALID";
 
       const telemetryRecord = {
         deviceId,
         fieldId,
         timestamp,
         measurements: structuredMeasurements,
-        qualitySummary: "VALID",
+        qualitySummary,
         freshnessState,
         dataMode: "REAL",
         syncStatus: "SYNCHRONIZED",
@@ -388,17 +416,29 @@ export class TelemetryController {
       const targetId = deviceId || "AGRISENSE-ESP8266-001";
       const interval = Number(telemetryIntervalSeconds) || 5;
 
+      const dev = await DeviceModel.findOne({ deviceId: targetId });
+      const newVersion = (dev?.config?.configVersion || 0) + 1;
+      const nowIso = new Date().toISOString();
+
       const updated = await DeviceModel.findOneAndUpdate(
         { deviceId: targetId },
-        { $set: { "config.telemetryIntervalSeconds": interval, "config.lastConfigUpdated": new Date().toISOString() } },
+        {
+          $set: {
+            "config.telemetryIntervalSeconds": interval,
+            "config.configVersion": newVersion,
+            "config.desiredAt": nowIso,
+            "config.status": "PENDING",
+            "config.lastConfigUpdated": nowIso,
+          },
+        },
         { upsert: true, new: true }
       );
 
       res.status(200).json({
         success: true,
-        message: `Hardware configuration updated. Telemetry sampling interval set to ${interval}s.`,
-        config: updated?.config || { telemetryIntervalSeconds: interval },
-        timestamp: new Date().toISOString(),
+        message: `Hardware configuration updated. Telemetry sampling interval set to ${interval}s (Version ${newVersion}).`,
+        config: updated?.config || { telemetryIntervalSeconds: interval, configVersion: newVersion, status: "PENDING" },
+        timestamp: nowIso,
       });
     } catch (err: any) {
       res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
@@ -414,8 +454,37 @@ export class TelemetryController {
       res.status(200).json({
         success: true,
         deviceId,
-        config: dev?.config || { telemetryIntervalSeconds: 5 },
+        config: dev?.config || { telemetryIntervalSeconds: 5, configVersion: 1, status: "APPLIED" },
         timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });
+    }
+  }
+
+  // POST /api/v1/device/config/ack
+  static async ackDeviceConfig(req: Request, res: Response): Promise<void> {
+    try {
+      const { deviceId, configVersion } = req.body;
+      const targetId = deviceId || "AGRISENSE-ESP8266-001";
+      const nowIso = new Date().toISOString();
+
+      const updated = await DeviceModel.findOneAndUpdate(
+        { deviceId: targetId },
+        {
+          $set: {
+            "config.appliedAt": nowIso,
+            "config.status": "APPLIED",
+          },
+        },
+        { new: true }
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Configuration version ${configVersion || updated?.config?.configVersion} acknowledged by device ${targetId}.`,
+        config: updated?.config,
+        timestamp: nowIso,
       });
     } catch (err: any) {
       res.status(500).json({ success: false, error: { code: "SERVER_ERROR", message: err.message }, timestamp: new Date().toISOString() });

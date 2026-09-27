@@ -15,7 +15,8 @@ import {
   fetchFieldReplay,
   fetchIoTEvents,
 } from "../../services/api";
-import { Activity, AlertTriangle, ArrowDown, ArrowUp, CheckCircle, Clock, Cpu, Droplets, Info, Play, RefreshCw, ShieldAlert, Sun, Thermometer, Wind, Zap } from "lucide-react";
+import { MagicMaker } from "../../components/MagicMaker";
+import { Activity, AlertTriangle, ArrowDown, ArrowUp, CheckCircle, Clock, Cpu, Droplets, Info, Play, RefreshCw, ShieldAlert, Sparkles, Sun, Thermometer, Wind, Zap } from "lucide-react";
 
 export const IoTIntelligenceView: React.FC = () => {
   const [report, setReport] = useState<IoTIntelligenceReport | null>(null);
@@ -26,7 +27,7 @@ export const IoTIntelligenceView: React.FC = () => {
   const [replayPoints, setReplayPoints] = useState<FieldReplayPoint[]>([]);
   const [replayIndex, setReplayIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "why" | "what-changed" | "what-if" | "digital-twin">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "magic-maker" | "why" | "what-changed" | "what-if" | "digital-twin">("overview");
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -190,6 +191,12 @@ export const IoTIntelligenceView: React.FC = () => {
           Signal Intelligence Radar
         </button>
         <button
+          onClick={() => setActiveTab("magic-maker")}
+          className={`pb-3 border-b-2 transition flex items-center gap-1.5 ${activeTab === "magic-maker" ? "border-emerald-500 text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-200"}`}
+        >
+          <Sparkles className="w-4 h-4 text-[#34D399]" /> Dynamic Magic Maker
+        </button>
+        <button
           onClick={() => setActiveTab("why")}
           className={`pb-3 border-b-2 transition ${activeTab === "why" ? "border-emerald-500 text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-200"}`}
         >
@@ -339,6 +346,9 @@ export const IoTIntelligenceView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* TAB CONTENT: MAGIC MAKER */}
+      {activeTab === "magic-maker" && <MagicMaker />}
 
       {/* TAB CONTENT: WHY IS MY FIELD LIKE THIS */}
       {activeTab === "why" && whyData && (

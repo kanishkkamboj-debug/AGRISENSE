@@ -3,7 +3,7 @@ import { Sidebar } from "./Sidebar";
 import { BottomTelemetryBar } from "./BottomTelemetryBar";
 import { Menu, X, Download, Bell, Settings, Cpu, ShieldCheck } from "lucide-react";
 import { useIoTData } from "../hooks/useIoTData";
-import { analyzeTelemetryAgainstCrop } from "../utils/agronomy";
+import { analyzeTelemetryAgainstCrop, formatTimeAgo } from "../utils/agronomy";
 import { Link, useLocation } from "react-router-dom";
 
 export const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -29,9 +29,10 @@ export const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
 
   const getBadgeLabel = () => {
     if (systemMode === "SIMULATION") return "🧪 SIMULATION MODE";
-    if (freshnessState === "LIVE" || freshnessState === "RECENT") return `🌐 REAL IoT MODE (Live Sensors • ${dataAgeSeconds}s ago)`;
-    if (freshnessState === "STALE") return `⚠️ REAL IoT MODE (Telemetry Stale • ${dataAgeSeconds}s ago)`;
-    if (freshnessState === "OFFLINE") return `🔴 REAL IoT MODE (Device Offline • ${dataAgeSeconds}s ago)`;
+    const timeText = formatTimeAgo(dataAgeSeconds);
+    if (freshnessState === "LIVE" || freshnessState === "RECENT") return `🌐 REAL IoT MODE (Live Sensors • ${timeText})`;
+    if (freshnessState === "STALE") return `⚠️ REAL IoT MODE (Telemetry Stale • ${timeText})`;
+    if (freshnessState === "OFFLINE") return `🔴 REAL IoT MODE (Device Offline • ${timeText})`;
     return "⚪ REAL IoT MODE (Waiting for Hardware)";
   };
 
